@@ -1,0 +1,354 @@
+// Copied grammar from https://github.com/graemeg/fpGUI/blob/master/docs/fpc_lang_ref.ipf
+// Adapted to EbnfStudio syntax with minor corrections
+// Adapted keywords from FP Language Reference 3.2.2 with additions to acommodate the given syntax
+
+Goal ::= (Program | Package | Library | Unit)
+
+Program ::= [PROGRAM Ident ['(' IdentList ')'] ';'] ProgramBlock '.'
+
+Unit ::= UNIT Ident [HintDirective] ';'
+	InterfaceSection
+	ImplementationSection
+	InitSection '.'
+
+Package ::= PACKAGE Ident ';'
+	[RequiresClause]
+	[ContainsClause]
+	END '.'
+
+Library ::= LIBRARY Ident ';' ProgramBlock '.'
+
+ProgramBlock ::= [UsesClause] Block
+
+UsesClause ::= USES IdentList ';'
+
+HintDirective ::= 'deprecated'  [String]
+	| 'experimental'
+	| 'library'
+	| 'platform'
+	| 'unimplemented'
+
+InterfaceSection ::= INTERFACE
+	[UsesClause]
+	{InterfaceDecl}
+	
+InterfaceDecl ::=  ConstSection
+	| TypeSection
+	| VarSection
+	| ExportedHeading
+
+ExportedHeading ::= ProcedureHeading ';' [Directive]
+	| FunctionHeading ';' [Directive]
+
+ImplementationSection ::= IMPLEMENTATION [UsesClause] {DeclSection} {ExportsStmt}
+
+Block ::= [DeclSection] {ExportsStmt} CompoundStmt {ExportsStmt}
+
+ExportsStmt ::= EXPORTS ExportsItem {',' ExportsItem}
+
+ExportsItem ::= Ident [ 'NAME' | 'INDEX' '\'' ConstExpr '\'' ] [ 'INDEX' | 'NAME' '\'' ConstExpr '\'' ]
+
+DeclSection ::= LabelDeclSection
+	| ConstSection
+	| TypeSection
+	| VarSection
+	| ProcedureDeclSection
+
+LabelDeclSection ::= LABEL LabelId
+
+ConstSection ::= CONST ConstantDecl ';' { ConstantDecl ';' }
+
+ConstantDecl ::= Ident '=' ConstExpr [HintDirective]
+	| Ident ':' TypeId '=' TypedConstant [HintDirective]
+
+TypeSection ::= TYPE (TypeDecl ';')
+
+TypeDecl ::= Ident '=' [TYPE] Type [HintDirective]
+	| Ident '=' [TYPE] RestrictedType [HintDirective]
+
+TypedConstant ::= (ConstExpr | ArrayConstant | RecordConstant)
+
+ArrayConstant ::= '(' TypedConstant ',' ')'
+
+RecordConstant ::= '(' RecordFieldConstant ';' {RecordFieldConstant ';'} ')'
+
+RecordFieldConstant ::= Ident ':' TypedConstant
+
+Type ::= TypeId
+	| SimpleType
+	| StrucType
+	| PointerType
+	| StringType
+	| ProcedureType
+	| VariantType
+	| ClassRefType
+
+RestrictedType ::= ObjectType
+	| ClassType
+	| InterfaceType
+
+ClassRefType ::= CLASS OF TypeId
+
+SimpleType ::= (OrdinalType | RealType)
+
+RealType ::=  'REAL48'
+	| 'REAL'
+	| 'SINGLE'
+	| 'DOUBLE'
+	| 'EXTENDED'
+	| 'CURRENCY'
+	| 'COMP'
+
+OrdinalType ::= (SubrangeType | EnumeratedType | OrdIdent)
+
+OrdIdent ::=  'SHORTINT'
+	| 'SMALLINT'
+	| 'INTEGER'
+	| 'BYTE'
+	| 'LONGINT'
+	| 'INT64'
+	| 'WORD'
+	| 'BOOLEAN'
+	| 'CHAR'
+	| 'WIDECHAR'
+	| 'LONGWORD'
+	| 'PCHAR'
+
+VariantType ::= 'VARIANT'
+	| 'OLEVARIANT'
+
+SubrangeType ::= ConstExpr '..' ConstExpr
+
+EnumeratedType ::= '(' EnumeratedTypeElement { ',' EnumeratedTypeElement } ')'
+
+EnumeratedTypeElement ::= Ident [ '=' ConstExpr ]
+
+StringType ::= STRING
+	| 'ANSISTRING'
+	| 'WIDESTRING'
+	| STRING '[' ConstExpr ']'
+	| 'UNICODESTRING'
+
+StrucType ::= [PACKED] (ArrayType | SetType | FileType | RecType [PACKED])
+
+ArrayType ::= ARRAY ['[' OrdinalType {',' OrdinalType} ']'] OF Type [HintDirective]
+
+RecType ::= RECORD [FieldList] END [HintDirective]
+
+FieldList ::= FieldDecl ';' { FieldDecl ';' } [VariantSection] [';']
+
+FieldDecl ::= IdentList ':' Type [HintDirective]
+
+VariantSection ::= CASE [Ident ':'] TypeId OF RecVariant ';' { RecVariant ';' }
+
+RecVariant ::= ConstExpr {',' ConstExpr} ':' '(' [FieldList] ')'
+
+SetType ::= SET OF OrdinalType [HintDirective]
+
+FileType ::= FILE OF TypeId [HintDirective]
+
+PointerType ::= '^' TypeId [HintDirective]
+
+ProcedureType ::= (ProcedureHeading | FunctionHeading) [OF OBJECT]
+
+VarSection ::= VAR VarDecl ';' { VarDecl ';' }
+
+VarDecl ::= IdentList ':' Type [ ABSOLUTE ( Ident | ConstExpr ) | '=' ConstExpr ] [HintDirective]
+
+Expression ::= SimpleExpression {RelOp SimpleExpression}
+
+ConstExpr ::= Expression // added by RK
+
+SimpleExpression ::= ['+' | '-'] Term {AddOp Term}
+
+Term ::= Factor {MulOp Factor}
+
+Factor ::=  Designator ['(' ExprList ')']
+	| '@' Designator
+	| Number
+	| String
+	| NIL
+	| '(' Expression ')'
+	| NOT Factor
+	| SetConstructor
+	| TypeId '(' Expression ')'
+
+RelOp ::=  '>' | '<' | '<=' | '>=' | '<>' | IN | IS | AS
+
+AddOp ::=  '+' | '-' | OR | XOR
+
+MulOp ::=  '*' | '/' | DIV | MOD | AND | SHL | SHR
+
+Designator ::= QualId {'.' Ident | '[' ExprList ']' | '^'}
+
+SetConstructor ::= '[' [SetElement { ',' SetElement } ] ']'
+
+SetElement ::= Expression ['..' Expression]
+
+ExprList ::= Expression {',' Expression}
+
+Statement ::= [LabelId ':'] [SimpleStatement | StructStmt]
+
+StmtList ::= Statement ';'
+
+SimpleStatement ::= Designator ['(' [ExprList] ')']
+	| Designator ':=' Expression
+	| INHERITED
+	| GOTO LabelId
+
+StructStmt ::= CompoundStmt
+	| ConditionalStmt
+	| LoopStmt
+	| WithStmt
+	| TryExceptStmt
+	| TryFinallyStmt
+	| RaiseStmt
+	| AssemblerStatement
+
+CompoundStmt ::= BEGIN StmtList END
+
+ConditionalStmt ::= IfStmt | CaseStmt
+
+IfStmt ::= IF Expression THEN Statement [ELSE Statement]
+
+CaseStmt ::= CASE Expression OF CaseSelector ';' {CaseSelector ';'} [ELSE StmtList] [';'] END
+
+CaseSelector ::= CaseLabel {','CaseLabel} ':' Statement
+
+CaseLabel ::= ConstExpr ['..' ConstExpr]
+
+LoopStmt ::= RepeatStmt | WhileStmt | ForStmt | ForInStmt
+
+RepeatStmt ::= REPEAT Statement UNTIL Expression
+
+WhileStmt ::= WHILE Expression DO Statement
+
+ForStmt ::= FOR QualId ':=' Expression (TO | DOWNTO) Expression DO Statement
+
+ForInStmt ::= FOR QualId IN Expression DO Statement
+
+WithStmt ::= WITH IdentList DO Statement
+
+TryExceptStmt ::= TRY Statement {Statement} EXCEPT ExceptionBlock END
+
+ExceptionBlock ::= {ON [Ident ':'] TypeId DO Statement} [ELSE {Statement}]
+
+TryFinallyStmt ::= TRY Statement FINALLY Statement END
+
+RaiseStmt ::= RAISE [object] [AT address]
+
+AssemblerStatement ::= ASM assemblylanguage END
+
+ProcedureDeclSection ::= ProcedureDecl | FunctionDecl
+
+ProcedureDecl ::= ProcedureHeading ';' [Directive] [HintDirective] Block ';'
+
+FunctionDecl ::= FunctionHeading ';' [Directive] [HintDirective] Block ';'
+
+FunctionHeading ::= FUNCTION Ident [FormalParameters] ':' (SimpleType | STRING)
+
+ProcedureHeading ::= PROCEDURE Ident [FormalParameters]
+
+FormalParameters ::= '(' [FormalParm { ';'FormalParm }] ')'
+
+FormalParm ::= [VAR | CONST | CONSTREF | OUT] Parameter
+
+Parameter ::= 
+	IdentList [':' ([ARRAY OF] SimpleType | STRING | FILE)] 
+	|  Ident ':' SimpleType '=' ConstExpr
+
+Directive ::=  
+	'CDECL'
+	| 'REGISTER'
+	| 'DYNAMIC'
+	| 'VIRTUAL'
+	| 'EXPORT'
+	| 'EXTERNAL'
+	| 'NEAR'
+	| 'FAR'
+	| 'FORWARD'
+	| 'MESSAGE' ConstExpr
+	| 'OVERRIDE'
+	| 'OVERLOAD'
+	| 'PASCAL'
+	| 'REINTRODUCE'
+	| 'SAFECALL'
+	| 'STDCALL'
+	| 'VARARGS'
+	| 'LOCAL'
+	| 'ABSTRACT'
+
+ObjectType ::= OBJECT [ObjHeritage] [ObjFieldList] MethodList END
+
+ObjHeritage ::= '(' QualId ')'
+
+MethodList ::= { (MethodHeading [';' 'VIRTUAL']) ';' }
+
+MethodHeading ::=  
+	ProcedureHeading
+	| FunctionHeading
+	| ConstructorHeading
+	| DestructorHeading
+
+ConstructorHeading ::= CONSTRUCTOR Ident [FormalParameters]
+
+DestructorHeading ::= DESTRUCTOR Ident [FormalParameters]
+
+ObjFieldList ::= (IdentList ':' Type) ';'
+
+InitSection ::= 
+	INITIALIZATION StmtList [FINALIZATION StmtList] END
+	| BEGIN StmtList END
+	| END
+
+ClassType ::= CLASS [ClassHeritage] ClassVisibility ClassFieldList ClassMethodList ClassPropertyList END
+
+ClassHeritage ::= '(' IdentList ')'
+
+ClassVisibility ::= [[STRICT] PRIVATE | PROTECTED | PUBLIC | PUBLISHED]
+
+ClassFieldList ::= { ClassVisibility ObjFieldList ';' }
+
+ClassMethodList ::= { ClassVisibility MethodList ';' }
+
+ClassPropertyList ::= { ClassVisibility PropertyList ';' }
+
+PropertyList ::= PROPERTY Ident [PropertyInterface] [PropertySpecifiers] [HintDirective]
+
+PropertyInterface ::= [PropertyParameterList] ':' Ident
+
+PropertyParameterList ::= '[' IdentList ':' TypeId ';' { IdentList ':' TypeId ';' } ']'
+
+PropertySpecifiers ::= ['INDEX' ConstExpr]
+                      ['READ' Ident]
+                      ['WRITE' Ident]
+                      // not in FP 3.2.2: ['STORED' (Ident | Constant)]
+                      [('DEFAULT' ConstExpr) | 'NODEFAULT']
+                      // not in FP 3.2.2 ['IMPLEMENTS' TypeId]
+
+InterfaceType ::= INTERFACE [InterfaceHeritage] ClassMethodList ClassPropertyList END
+
+InterfaceHeritage ::= '(' IdentList ')'
+
+RequiresClause ::= REQUIRES IdentList ';' { IdentList ';' }
+
+ContainsClause ::= CONTAINS IdentList ';' { IdentList ';' }
+
+IdentList ::= Ident { ',' Ident }
+
+QualId ::= [UnitId '.'] Ident
+
+TypeId ::= [UnitId '.'] identifier
+Ident ::= identifier
+UnitId ::= identifier // <unit-identifier>
+LabelId ::= identifier //  <label-identifier>
+Number ::= number
+String ::= string
+
+// lexer tokens
+number ::=
+string ::=
+identifier ::=
+assemblylanguage ::=
+object ::=
+address ::=
