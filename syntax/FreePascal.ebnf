@@ -1,354 +1,377 @@
-// Copied grammar from https://github.com/graemeg/fpGUI/blob/master/docs/fpc_lang_ref.ipf
-// Adapted to EbnfStudio syntax with minor corrections
-// Adapted keywords from FP Language Reference 3.2.2 with additions to acommodate the given syntax
-
-Goal ::= (Program | Package | Library | Unit)
-
-Program ::= [PROGRAM Ident ['(' IdentList ')'] ';'] ProgramBlock '.'
-
-Unit ::= UNIT Ident [HintDirective] ';'
-	InterfaceSection
-	ImplementationSection
-	InitSection '.'
-
-Package ::= PACKAGE Ident ';'
-	[RequiresClause]
-	[ContainsClause]
-	END '.'
-
-Library ::= LIBRARY Ident ';' ProgramBlock '.'
-
-ProgramBlock ::= [UsesClause] Block
-
-UsesClause ::= USES IdentList ';'
-
-HintDirective ::= 'deprecated'  [String]
-	| 'experimental'
-	| 'library'
-	| 'platform'
-	| 'unimplemented'
-
-InterfaceSection ::= INTERFACE
-	[UsesClause]
-	{InterfaceDecl}
-	
-InterfaceDecl ::=  ConstSection
-	| TypeSection
-	| VarSection
-	| ExportedHeading
-
-ExportedHeading ::= ProcedureHeading ';' [Directive]
-	| FunctionHeading ';' [Directive]
-
-ImplementationSection ::= IMPLEMENTATION [UsesClause] {DeclSection} {ExportsStmt}
-
-Block ::= [DeclSection] {ExportsStmt} CompoundStmt {ExportsStmt}
-
-ExportsStmt ::= EXPORTS ExportsItem {',' ExportsItem}
-
-ExportsItem ::= Ident [ 'NAME' | 'INDEX' '\'' ConstExpr '\'' ] [ 'INDEX' | 'NAME' '\'' ConstExpr '\'' ]
-
-DeclSection ::= LabelDeclSection
-	| ConstSection
-	| TypeSection
-	| VarSection
-	| ProcedureDeclSection
-
-LabelDeclSection ::= LABEL LabelId
-
-ConstSection ::= CONST ConstantDecl ';' { ConstantDecl ';' }
-
-ConstantDecl ::= Ident '=' ConstExpr [HintDirective]
-	| Ident ':' TypeId '=' TypedConstant [HintDirective]
-
-TypeSection ::= TYPE (TypeDecl ';')
-
-TypeDecl ::= Ident '=' [TYPE] Type [HintDirective]
-	| Ident '=' [TYPE] RestrictedType [HintDirective]
-
-TypedConstant ::= (ConstExpr | ArrayConstant | RecordConstant)
-
-ArrayConstant ::= '(' TypedConstant ',' ')'
-
-RecordConstant ::= '(' RecordFieldConstant ';' {RecordFieldConstant ';'} ')'
-
-RecordFieldConstant ::= Ident ':' TypedConstant
-
-Type ::= TypeId
-	| SimpleType
-	| StrucType
-	| PointerType
-	| StringType
-	| ProcedureType
-	| VariantType
-	| ClassRefType
-
-RestrictedType ::= ObjectType
-	| ClassType
-	| InterfaceType
-
-ClassRefType ::= CLASS OF TypeId
-
-SimpleType ::= (OrdinalType | RealType)
-
-RealType ::=  'REAL48'
-	| 'REAL'
-	| 'SINGLE'
-	| 'DOUBLE'
-	| 'EXTENDED'
-	| 'CURRENCY'
-	| 'COMP'
-
-OrdinalType ::= (SubrangeType | EnumeratedType | OrdIdent)
-
-OrdIdent ::=  'SHORTINT'
-	| 'SMALLINT'
-	| 'INTEGER'
-	| 'BYTE'
-	| 'LONGINT'
-	| 'INT64'
-	| 'WORD'
-	| 'BOOLEAN'
-	| 'CHAR'
-	| 'WIDECHAR'
-	| 'LONGWORD'
-	| 'PCHAR'
-
-VariantType ::= 'VARIANT'
-	| 'OLEVARIANT'
-
-SubrangeType ::= ConstExpr '..' ConstExpr
-
-EnumeratedType ::= '(' EnumeratedTypeElement { ',' EnumeratedTypeElement } ')'
-
-EnumeratedTypeElement ::= Ident [ '=' ConstExpr ]
-
-StringType ::= STRING
-	| 'ANSISTRING'
-	| 'WIDESTRING'
-	| STRING '[' ConstExpr ']'
-	| 'UNICODESTRING'
-
-StrucType ::= [PACKED] (ArrayType | SetType | FileType | RecType [PACKED])
-
-ArrayType ::= ARRAY ['[' OrdinalType {',' OrdinalType} ']'] OF Type [HintDirective]
-
-RecType ::= RECORD [FieldList] END [HintDirective]
-
-FieldList ::= FieldDecl ';' { FieldDecl ';' } [VariantSection] [';']
-
-FieldDecl ::= IdentList ':' Type [HintDirective]
-
-VariantSection ::= CASE [Ident ':'] TypeId OF RecVariant ';' { RecVariant ';' }
-
-RecVariant ::= ConstExpr {',' ConstExpr} ':' '(' [FieldList] ')'
-
-SetType ::= SET OF OrdinalType [HintDirective]
-
-FileType ::= FILE OF TypeId [HintDirective]
-
-PointerType ::= '^' TypeId [HintDirective]
-
-ProcedureType ::= (ProcedureHeading | FunctionHeading) [OF OBJECT]
-
-VarSection ::= VAR VarDecl ';' { VarDecl ';' }
-
-VarDecl ::= IdentList ':' Type [ ABSOLUTE ( Ident | ConstExpr ) | '=' ConstExpr ] [HintDirective]
-
-Expression ::= SimpleExpression {RelOp SimpleExpression}
-
-ConstExpr ::= Expression // added by RK
-
-SimpleExpression ::= ['+' | '-'] Term {AddOp Term}
-
-Term ::= Factor {MulOp Factor}
-
-Factor ::=  Designator ['(' ExprList ')']
-	| '@' Designator
-	| Number
-	| String
-	| NIL
-	| '(' Expression ')'
-	| NOT Factor
-	| SetConstructor
-	| TypeId '(' Expression ')'
-
-RelOp ::=  '>' | '<' | '<=' | '>=' | '<>' | IN | IS | AS
-
-AddOp ::=  '+' | '-' | OR | XOR
-
-MulOp ::=  '*' | '/' | DIV | MOD | AND | SHL | SHR
-
-Designator ::= QualId {'.' Ident | '[' ExprList ']' | '^'}
-
-SetConstructor ::= '[' [SetElement { ',' SetElement } ] ']'
-
-SetElement ::= Expression ['..' Expression]
-
-ExprList ::= Expression {',' Expression}
-
-Statement ::= [LabelId ':'] [SimpleStatement | StructStmt]
-
-StmtList ::= Statement ';'
-
-SimpleStatement ::= Designator ['(' [ExprList] ')']
-	| Designator ':=' Expression
-	| INHERITED
-	| GOTO LabelId
-
-StructStmt ::= CompoundStmt
-	| ConditionalStmt
-	| LoopStmt
-	| WithStmt
-	| TryExceptStmt
-	| TryFinallyStmt
-	| RaiseStmt
-	| AssemblerStatement
-
-CompoundStmt ::= BEGIN StmtList END
-
-ConditionalStmt ::= IfStmt | CaseStmt
-
-IfStmt ::= IF Expression THEN Statement [ELSE Statement]
-
-CaseStmt ::= CASE Expression OF CaseSelector ';' {CaseSelector ';'} [ELSE StmtList] [';'] END
-
-CaseSelector ::= CaseLabel {','CaseLabel} ':' Statement
-
-CaseLabel ::= ConstExpr ['..' ConstExpr]
-
-LoopStmt ::= RepeatStmt | WhileStmt | ForStmt | ForInStmt
-
-RepeatStmt ::= REPEAT Statement UNTIL Expression
-
-WhileStmt ::= WHILE Expression DO Statement
-
-ForStmt ::= FOR QualId ':=' Expression (TO | DOWNTO) Expression DO Statement
-
-ForInStmt ::= FOR QualId IN Expression DO Statement
-
-WithStmt ::= WITH IdentList DO Statement
-
-TryExceptStmt ::= TRY Statement {Statement} EXCEPT ExceptionBlock END
-
-ExceptionBlock ::= {ON [Ident ':'] TypeId DO Statement} [ELSE {Statement}]
-
-TryFinallyStmt ::= TRY Statement FINALLY Statement END
-
-RaiseStmt ::= RAISE [object] [AT address]
-
-AssemblerStatement ::= ASM assemblylanguage END
-
-ProcedureDeclSection ::= ProcedureDecl | FunctionDecl
-
-ProcedureDecl ::= ProcedureHeading ';' [Directive] [HintDirective] Block ';'
-
-FunctionDecl ::= FunctionHeading ';' [Directive] [HintDirective] Block ';'
-
-FunctionHeading ::= FUNCTION Ident [FormalParameters] ':' (SimpleType | STRING)
-
-ProcedureHeading ::= PROCEDURE Ident [FormalParameters]
-
-FormalParameters ::= '(' [FormalParm { ';'FormalParm }] ')'
-
-FormalParm ::= [VAR | CONST | CONSTREF | OUT] Parameter
-
-Parameter ::= 
-	IdentList [':' ([ARRAY OF] SimpleType | STRING | FILE)] 
-	|  Ident ':' SimpleType '=' ConstExpr
-
-Directive ::=  
-	'CDECL'
-	| 'REGISTER'
-	| 'DYNAMIC'
-	| 'VIRTUAL'
-	| 'EXPORT'
-	| 'EXTERNAL'
-	| 'NEAR'
-	| 'FAR'
-	| 'FORWARD'
-	| 'MESSAGE' ConstExpr
-	| 'OVERRIDE'
-	| 'OVERLOAD'
-	| 'PASCAL'
-	| 'REINTRODUCE'
-	| 'SAFECALL'
-	| 'STDCALL'
-	| 'VARARGS'
-	| 'LOCAL'
-	| 'ABSTRACT'
-
-ObjectType ::= OBJECT [ObjHeritage] [ObjFieldList] MethodList END
-
-ObjHeritage ::= '(' QualId ')'
-
-MethodList ::= { (MethodHeading [';' 'VIRTUAL']) ';' }
-
-MethodHeading ::=  
-	ProcedureHeading
-	| FunctionHeading
-	| ConstructorHeading
-	| DestructorHeading
-
-ConstructorHeading ::= CONSTRUCTOR Ident [FormalParameters]
-
-DestructorHeading ::= DESTRUCTOR Ident [FormalParameters]
-
-ObjFieldList ::= (IdentList ':' Type) ';'
-
-InitSection ::= 
-	INITIALIZATION StmtList [FINALIZATION StmtList] END
-	| BEGIN StmtList END
-	| END
-
-ClassType ::= CLASS [ClassHeritage] ClassVisibility ClassFieldList ClassMethodList ClassPropertyList END
-
-ClassHeritage ::= '(' IdentList ')'
-
-ClassVisibility ::= [[STRICT] PRIVATE | PROTECTED | PUBLIC | PUBLISHED]
-
-ClassFieldList ::= { ClassVisibility ObjFieldList ';' }
-
-ClassMethodList ::= { ClassVisibility MethodList ';' }
-
-ClassPropertyList ::= { ClassVisibility PropertyList ';' }
-
-PropertyList ::= PROPERTY Ident [PropertyInterface] [PropertySpecifiers] [HintDirective]
-
-PropertyInterface ::= [PropertyParameterList] ':' Ident
-
-PropertyParameterList ::= '[' IdentList ':' TypeId ';' { IdentList ':' TypeId ';' } ']'
-
-PropertySpecifiers ::= ['INDEX' ConstExpr]
-                      ['READ' Ident]
-                      ['WRITE' Ident]
-                      // not in FP 3.2.2: ['STORED' (Ident | Constant)]
-                      [('DEFAULT' ConstExpr) | 'NODEFAULT']
-                      // not in FP 3.2.2 ['IMPLEMENTS' TypeId]
-
-InterfaceType ::= INTERFACE [InterfaceHeritage] ClassMethodList ClassPropertyList END
-
-InterfaceHeritage ::= '(' IdentList ')'
-
-RequiresClause ::= REQUIRES IdentList ';' { IdentList ';' }
-
-ContainsClause ::= CONTAINS IdentList ';' { IdentList ';' }
-
-IdentList ::= Ident { ',' Ident }
-
-QualId ::= [UnitId '.'] Ident
-
-TypeId ::= [UnitId '.'] identifier
-Ident ::= identifier
-UnitId ::= identifier // <unit-identifier>
-LabelId ::= identifier //  <label-identifier>
-Number ::= number
-String ::= string
+// Author of this file: Rochus Keller <mailto:me@rochus-keller.ch> (July 2023)
+// First attempt, copied grammar from https://github.com/graemeg/fpGUI/blob/master/docs/fpc_lang_ref.ipf
+//   - Adapted to EbnfStudio syntax with minor corrections
+//   - Adapted keywords from FP Language Reference 3.2.2 with additions to accommodate the given syntax
+//   - Unfortunately not complete (e.g. missing generics ) and different productions than lang ref
+// Therefore new attempt: transcribing all syntax diagrams from the lang ref to ebnf
+//   - added digit suffix to productions with same name but different structure
+//   - removed name variations (e.g. hint_directive vs hintdirective), added obviously missing 
+//     productions, and corrected obviously wrong productions 
+//     (e.g. with_statement, exception_address)
+//   - a lot of undefined and unused productions remain (see TODO and the warnings in EbnfStudio)
+
+FreePascal ::= program_ | unit_ | library_
+
+program_ ::= program_header ';' [ uses_clause ] block '.'
+program_header ::= program identifier [ '(' program_parameters ')' ]
+program_parameters ::= identifier_list
+uses_clause ::= uses uses_clause_ { ',' uses_clause_ } ';'
+uses_clause_ ::= identifier [ in string_literal ]
+
+unit_ ::= unit_header interface_part implementation_part
+		( [ initialization_part ] [ finalization_part ]
+		| begin statement { ';' statement } ) end '.'
+unit_header ::= unit identifier { '.' identifier } hintdirectives ';'
+interface_part ::= interface [ uses_clause ] { constant_declaration_part | type_declaration_part
+				| variable_declaration_part | property_declaration_part | procedure_headers_part }
+procedure_headers_part ::= func_proc_header ';' [ call_modifiers ';' ]
+implementation_part ::= implementation [ uses_clause ] declaration_part 
+initialization_part ::= initialization statement { ';' statement }
+finalization_part ::= finalization statement { ';' statement }
+
+library_ ::= library_header ';' [ uses_clause ] block '.'
+library_header ::= library identifier
+
+exports_clause ::= exports exports_list ';'
+exports_list ::= exports_entry { ',' exports_entry }
+exports_entry ::= identifier [ 'index' integer_constant ] [ 'name' string_constant ]
+
+block ::= declaration_part statement_part
+
+declaration_part ::= { label_declaration_part | constant_declaration_part | resourcestring_declaration_part
+					| type_declaration_part | variable_declaration_part 
+					| threadvariable_declaration_part | func_proc_declaration_part }
+label_declaration_part ::= label label_def { ',' label_def } ';'
+constant_declaration_part ::= const { constant_declaration | typed_constant_declaration }
+resourcestring_declaration_part ::= resourcestring string_constant_declaration { string_constant_declaration }
+type_declaration_part ::= type type_declaration { type_declaration }
+variable_declaration_part ::= var variable_declaration { variable_declaration }
+threadvariable_declaration_part ::= threadvar variable_declaration { variable_declaration }
+func_proc_declaration_part ::= { procedure_declaration | function_declaration
+							| constructor_declaration | destructor_declaration }
+							
+statement_part ::= compound_statement
+
+hint_directive ::= 
+		'deprecated' [ string_constant ]
+		| 'experimental' 
+		| 'platform'
+		| 'unimplemented'
+
+hintdirectives ::= [ hint_directive { ';' hint_directive } ]
+
+constant_declaration ::= constant_declaration_ { constant_declaration_ }
+constant_declaration_ ::= identifier '=' expression hintdirectives ';'
+
+typed_constant_declaration ::= identifier ':' type_ '=' typed_constant hintdirectives ';'
+
+typed_constant ::= constant | address_constant | array_constant | record_constant | procedural_constant
+
+type_declaration ::= identifier '=' type_ hintdirectives ';'
+
+type_ ::= [type] simple_type // includes ident for type_alias 
+		| string_type | structured_type | pointer_type | procedural_type 
+		| generic_type | specialized_type
+
+simple_type ::= ordinal_type // includes ident for real types
+type_alias- ::= [type] identifier // migrated to type_
+type_name ::= identifier
+subrange_type ::= constant '..' constant
+string_type ::= string [ '[' unsigned_integer ']' ] | type ( string | 'ansistring' ) '(' unsigned_integer ')'
+ordinal_type ::= subrange_type | enumerated_type 
+			| identifier // Integer, Shortint, SmallInt, Longint, ... , boolean, chars
+
+identifier_list ::= identifier { ',' identifier }
+
+enumerated_type ::= '(' enumerated_type_ { ',' enumerated_type_ } ')'
+enumerated_type_ ::= identifier_list | assigned_enum_list
+assigned_enum_list ::= assigned_enum_ { ',' assigned_enum_ }
+assigned_enum_ ::= identifier ('=' | ':=') expression
+
+structured_type ::= array_type | record_type | object_type | class_type | class_reference_type
+				| interface_type | set_type | file_type
+
+array_type ::= [ packed | 'bitpacked' ] array [ '[' ordinal_type { ',' ordinal_type } ']' ] of type_
+
+record_type ::= [ packed | 'bitpacked' ] record [ field_list ] end
+field_list ::= [ fixed_fields [';'] ] [ variant_part ] [';']
+variant_part ::= case [ identifier ':' ] ordinal_type of variant { ';' variant }
+variant ::= constant { ',' constant } ':' '(' [ field_list ] ')'
+fixed_fields ::= fixed_field_ { ';' fixed_field_ }
+fixed_field_ ::= identifier_list ':' type_
+
+set_type ::= set of ordinal_type
+
+file_type ::= file [ of type_name ]
+
+pointer_type ::= 'ˆ' type_name
+
+procedural_type ::= func_proc_header [ of object | is 'nested' ] [ ';' call_modifiers ]
+func_proc_header ::= [ function | procedure ] formal_parameter_list [ ':' result_type ]
+call_modifiers ::= 'register' | 'cdecl' | 'pascal' | 'stdcall' | 'safecall' | inline
+
+variable_declaration ::= identifier ':' type_ [ '=' expression ] [ variable_modifiers ] hintdirectives ';'
+variable_modifiers ::= variable_modifier_ { variable_modifier_ }
+variable_modifier_ ::= 
+	absolute expression // integer expression or ident
+	| ';' 'export' 
+	| ';' 'cvar'
+	| ';' 'external' [ string_constant ] [ 'name' string_constant ]
+	| hint_directive 
+
+property_definition ::= identifier [ property_interface ] property_specifiers
+property_interface ::= [ property_parameter_list ] ':' type_name [ 'index' integer_constant ]
+property_parameter_list ::= '[' parameter_declaration { ';' parameter_declaration } ']'
+property_specifiers ::= [ read_specifier ] [ write_specifier ] [ default_specifier ]
+read_specifier ::= 'read' field_or_function
+write_specifier ::= 'write' field_or_procedure
+default_specifier ::= 'default' [ constant ] | 'nodefault'
+field_or_function ::= identifier
+field_or_procedure ::= identifier
+
+object_type ::= [ packed ] object [ 'abstract' | 'sealed' ] [ heritage ] { component_list } end
+heritage ::= '(' type_name ')' // object  type identifier
+component_list ::= [ object_visibility_specifier ] { const_definition } { field_definition } { method_definition }
+field_definition ::= [ [class] var ] identifier_list ':' type_ ';' [ 'static' ';' ]
+const_definition ::= const identifier '=' constant_expression ';'
+object_visibility_specifier ::= 'private' | 'protected' | 'public'
+
+constructor_declaration ::= constructor_header ';' subroutine_block
+destructor_declaration ::= destructor_header ';' subroutine_block
+constructor_header ::= constructor ( identifier | qualified_method_identifier ) formal_parameter_list
+destructor_header ::= destructor ( identifier | qualified_method_identifier ) formal_parameter_list
+
+method_definition ::= [class] ( func_proc_header | constructor_header | destructor_header ) ';'
+					method_directives
+method_directives ::= [ 'virtual' ';' [ 'abstract' ';' ] ] [ call_modifiers ';' ]
+
+class_type ::= [packed] class 
+			[ [ 'abstract' | 'sealed' ] [ heritage2 ] { component_list2 } end ]
+heritage2 ::= '(' type_name  // class type identifier
+				implemented_interfaces ')' 
+implemented_interfaces ::= { ',' identifier } // interface identifier
+component_list2 ::= [ class_visibility_specifier ] { field_definition2 } { class_part }
+class_part ::= constant_declaration_part | type_declaration_part | variable_declaration_part
+			| class_variable_declaration_part | method_definition2 | property_definition2
+class_visibility_specifier ::= 'public' | 'published' | [ 'strict' ] ( 'private' | 'protected' )
+method_definition2 ::= [ class ] ( func_proc_header | constructor_header | destructor_header ) ';'
+					method_directives2 [ call_modifiers ';' ]
+method_directives2 ::= [ ( 'virtual' | 'dynamic' ) [ ';' 'abstract' ]
+					| 'override'
+					| 'message' ( integer_constant | string_constant ) ] ';'
+field_definition2 ::= identifier_list ':' type_ ';' [ 'static' ';' ]
+class_variable_declaration_part ::= class variable_declaration_part
+
+property_definition2 ::= [class] property identifier [ property_interface ] property_specifiers2 hintdirectives
+property_specifiers2 ::= [ read_specifier ] [ write_specifier | implements_specifier ] [ default_specifier ]
+					[ stored_specifier ] [ defaultarraypropertyspecifier ]
+implements_specifier ::= 'implements' identifier { ',' identifier }
+stored_specifier ::= 'stored' ( constant | identifier )
+defaultarraypropertyspecifier ::= ';' 'default'
+
+interface_type ::= interface [ heritage ] [ guid ] { component_list2 } end // heritage only interface type identifiers
+guid ::= '[' string_constant ']'
+
+class_reference_type ::= class of type_name // classtype
+
+generic_type ::= 'generic' identifier '<' template_list '>' '=' generic_type_ ';'
+template_list ::= identifier_list2 { ';' identifier_list2 }
+identifier_list2 ::= identifier_list [ ':' ( 
+				type_name { ',' type_name }
+				| class | interface | object | record ) ]
+generic_type_ ::= class_type | object_type | interface_type | procedural_type | record_type | array_type
+
+specialized_type ::= 'specialize' identifier '<' type_name_list '>'
+type_name_list ::= type_name { ',' type_name }
+
+extended_record_type ::= [ packed ] record { component_list3 } end
+component_list3 ::= [record_visibility_specifier] { fixed_field_ } { record_method_definition }
+					{ property_definition } { record_operator_definition } [ variant_part ]
+record_visibility_specifier ::= 'public' | [ 'strict' ] 'private'
+record_method_definition ::= func_proc_header ';' [ call_modifiers ';' ]
+record_operator_definition ::= class operator_definition
+
+helper_type ::= ( class | record | type ) 'helper' [ '(' base_helper ')' ] for identifier 
+				helper_component_list { helper_component_list } end hintdirectives
+helper_component_list ::= ( method_definition | property_definition )
+
+// Objective C Class types (objcclass) not considered here
+
+expression ::= simple_expression [ relop simple_expression ]
+relop ::= '<' | '<=' | '>' | '>=' | '=' | '<>' | in | is
+simple_expression ::= term { adop term }
+adop ::= '+' | '-' | or | xor
+term ::= factor { mulop factor }
+mulop ::= '*' | '/' | div | mod | and | shl | shr | as
+factor ::= '(' expression ')' | variable_reference | function_call | unsigned_constant |
+		not factor | sign factor | set_constructor | value_typecast | address_factor
+unsigned_constant ::= unsigned_number | character_string | constant_identifier | nil
+sign ::= '+' | '-'
+
+function_call ::= ( function_identifier | method_designator | qualified_method_designator | variable_reference )
+				[ actual_parameter_list ]
+actual_parameter_list ::= '(' [ expression { ',' expression } ] ')'
+
+set_constructor ::= '[' [ set_group { ',' set_group } ] ']'
+set_group ::= expression [ '..' expression ]
+
+value_typecast ::= type_name '(' expression ')'
+
+address_factor ::= '@' ( variable_reference | function_identifier | procedure_identifier |  qualified_method_identifier )
+
+constant_expression ::= expression
+
+statement ::= [ label_def ] ( simple_statement | structured_statement | asm_statement )
+
+simple_statement ::= assignment_statement | procedure_statement | goto_statement | raise_statement
+
+assignment_statement ::= ( variable_reference | function_identifier ) assigop expression
+assigop ::= ':=' | '+=' | '-=' | '*=' | '/='
+
+procedure_statement ::= ( procedure_identifier | method_designator | qualified_method_identifier
+						| variable_reference ) [ actual_parameter_list ]
+
+goto_statement ::= goto label_def
+
+structured_statement ::= compound_statement | conditional_statement | repetitive_statement
+						with_statement | exception_statement
+
+conditional_statement ::= case_statement | if_statement
+
+repetitive_statement ::= for_statement | for_in_statement | repeat_statement | while_statement
+
+compound_statement ::= begin statement { ';' statement } end
+
+statement_list ::= statement { ';' statement }
+
+case_statement ::= case expression of case_part { ';' case_part } [ else_part ] [ ';' ] end
+case_part ::= case_range { ',' case_range } ':' statement
+case_range ::= constant [ '..' constant ]
+else_part ::= ( else | 'otherwise' ) statement_list
+
+if_statement ::= if expression then statement [ else statement ]
+
+for_statement ::= for control_variable  ':=' initial_value ( to | downto ) final_value do statement
+control_variable ::= variable_identifier
+initial_value ::= expression
+final_value ::= expression
+
+for_in_statement ::= for control_variable in enumerable do statement
+enumerable ::= enumerated_type | expression
+
+repeat_statement ::= repeat statement_list until expression
+
+while_statement ::= while expression do statement
+
+with_statement ::= with variable_reference { ',' variable_reference }
+
+asm_statement ::= asm assembler_code end [ register_list ]
+assembler_code ::= // to be delivered by lexer with asm keyword
+register_list ::= '[' string_constant { ',' string_constant } ']'
+
+procedure_declaration ::= procedure_header ';' subroutine_block ';'
+procedure_header ::= procedure ( identifier | qualified_method_identifier ) formal_parameter_list
+					[ modifiers ] hintdirectives
+subroutine_block ::= block | external_directive | asm_block | 'forward'
+
+function_declaration ::= function_header ';' subroutine_block ';'
+function_header ::= function ( identifier | qualified_method_identifier ) formal_parameter_list ':' result_type
+					[ modifiers ] hintdirectives
+
+formal_parameter_list ::= '(' parameter_declaration { ';' parameter_declaration } ')'
+parameter_declaration ::= value_parameter | variable_parameter | out_parameter | 
+						constant_parameter | out_parameter
+value_parameter ::= identifier_list ':' [ array of ] parameter_type
+				| identifier ':' type_name '=' default_parameter_value
+variable_parameter ::= var identifier_list [ ':' [ array of ] type_name ]
+out_parameter ::= out identifier_list [ ':' [ array of ] type_name ]
+constant_parameter ::= const identifier_list [ ':' [ array of ] type_name ]
+					| identifier ':' type_name '=' default_parameter_value
+
+external_directive ::= 'external' [ string_constant [ 'name' string_constant | 'index' integer_constant] ]
+
+asm_block ::= 'assembler' ';' declaration_part // TODO  asm_statement
+
+modifiers ::= modifier { modifier }
+modifier ::= ';' (
+	'public' [ 'name' string_constant ]
+	| 'export'
+	| 'alias' ':' string_constant
+	| 'interrupt'
+	| 'noreturn'
+	| 'iocheck'
+	| call_modifiers2
+	)
+call_modifiers2 ::= 'cdecl' | 'cppdecl' | 'hardfloat' | inline | 'local' | 'mwpascal' | 'ms_abi_default' | 'ms_abi_cdecl'
+				| 'nostackframe' | 'overload' | 'pascal' | 'register'| 'safecall' | 'saveregisters' | 'softfloat'
+				| 'stdcall' | 'sysv_abi_default' | 'sysv_abi_cdecl' | 'vectorcall' | 'varargs'
+
+operator_definition ::= operator ( assignment_operator_definition | arithmetic_operator_definition
+							| comparison_operator_definition | logical_operator_definition
+							| other_operator_definition ) [ result_identifier ] ':' result_type
+							';' subroutine_block
+assignment_operator_definition ::= ( ':=' | 'explicit' ) '(' value_parameter ')'
+arithmetic_operator_definition ::= ( '+' | '-' | '*' | '/' | '**' | '><' ) '(' parameter_list ')'
+comparison_operator_definition ::= ( '=' | '<' | '<=' | '>' | '>=' | '<>' | in ) '(' parameter_list ')'
+logical_operator_definition ::= ( and | or | xor | not ) '(' parameter_list ')'
+other_operator_definition ::= ( 'enumerator' | 'inc' | 'dec' ) '(' parameter_list ')'
+
+raise_statement ::= raise [ exception_instance [ exception_address ] ]
+exception_address ::= 'at' address_expression { ',' address_expression }
+
+try_statement ::= try statement_list except exceptionhandlers end
+exceptionhandlers ::= [ statement_list | exception_handler { ';' exception_handler } else statement_list ]
+exception_handler ::= on [ identifier ':' ] type_name //  class_type_identifier
+					do statement 
+try_finally_statement ::= try statement_list finally statement_list
+
+// Guessed from lang spec textual description (no syntax diagram available):
+constant ::= unsigned_number | string_constant
+string_literal ::= string_constant
+string_constant ::= character_string
+integer_constant ::= unsigned_integer
+result_type ::= type_ // The result type of a function can be any previously declared type
+constant_identifier ::= identifier
+exception_statement ::= try_statement | try_finally_statement | raise_statement
+property_declaration_part ::= property property_definition ';' { property_definition ';' } // TODO: confirm
+exception_instance ::= identifier
+result_identifier ::= identifier
+qualified_method_identifier ::= identifier '.' identifier
+qualified_method_designator ::= qualified_method_identifier
+variable_reference ::= identifier
+function_identifier ::= identifier
+procedure_identifier ::= identifier
+variable_identifier ::= identifier
+parameter_list ::= parameter_declaration { ';' parameter_declaration }
+method_designator ::= identifier
+default_parameter_value ::= expression
+parameter_type ::= type_
+//////
+
+// TODO: 
+address_constant ::= 
+address_expression ::=
+array_constant ::= 
+record_constant ::= 
+procedural_constant ::= 
+base_helper ::=
+string_constant_declaration ::= // used with resourcestring
+//////
+
+label_def ::= decimal_int | identifier
+
+// not used: signed_number ::= [ '+' | '-' ] unsigned_number
+unsigned_number ::= unsigned_integer | unsigned_real
+unsigned_integer ::= decimal_int | hex_int | octal_int | binary_int
+
+character_string ::= ( quoted_string | control_string ) { quoted_string | control_string }
 
 // lexer tokens
-number ::=
-string ::=
 identifier ::=
-assemblylanguage ::=
-object ::=
-address ::=
+unsigned_real ::=
+decimal_int ::= // digit sequence
+hex_int ::=  // $ hex digit sequence
+octal_int ::= // & octal digit sequence
+binary_int ::= // % bin digit sequence
+quoted_string ::=
+control_string ::=
