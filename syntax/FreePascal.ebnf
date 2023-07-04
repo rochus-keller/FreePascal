@@ -8,7 +8,8 @@
 //   - removed name variations (e.g. hint_directive vs hintdirective), added obviously missing 
 //     productions, and corrected obviously wrong productions 
 //     (e.g. with_statement, exception_address)
-//   - a lot of undefined and unused productions remain (see TODO and the warnings in EbnfStudio)
+//   - integrated unused in existing productions based on examples in fpc 3.2.2 source tree
+//   - could defer some of the undefined productions from examples in the fpc source tree, but not all, see TODO
 
 FreePascal ::= program_ | unit_ | library_
 
@@ -40,7 +41,9 @@ block ::= declaration_part statement_part
 
 declaration_part ::= { label_declaration_part | constant_declaration_part | resourcestring_declaration_part
 					| type_declaration_part | variable_declaration_part 
-					| threadvariable_declaration_part | func_proc_declaration_part }
+					| threadvariable_declaration_part | func_proc_declaration_part
+					| exports_clause // only in library_
+					}
 label_declaration_part ::= label label_def { ',' label_def } ';'
 constant_declaration_part ::= const { constant_declaration | typed_constant_declaration }
 resourcestring_declaration_part ::= resourcestring string_constant_declaration { string_constant_declaration }
@@ -89,7 +92,7 @@ assigned_enum_list ::= assigned_enum_ { ',' assigned_enum_ }
 assigned_enum_ ::= identifier ('=' | ':=') expression
 
 structured_type ::= array_type | record_type | object_type | class_type | class_reference_type
-				| interface_type | set_type | file_type
+				| interface_type | set_type | file_type | helper_type | extended_record_type
 
 array_type ::= [ packed | 'bitpacked' ] array [ '[' ordinal_type { ',' ordinal_type } ']' ] of type_
 
@@ -348,14 +351,17 @@ default_parameter_value ::= expression
 parameter_type ::= type_
 //////
 
+// Guessed from existing fpc 3.2.2 source tree:
+base_helper ::= identifier
+string_constant_declaration ::= identifier '=' string_constant ';'
+address_expression ::= expression // results in CodePointer or Pointer
+/////
+
 // TODO: 
 address_constant ::= 
-address_expression ::=
 array_constant ::= 
 record_constant ::= 
 procedural_constant ::= 
-base_helper ::=
-string_constant_declaration ::= // used with resourcestring
 //////
 
 label_def ::= decimal_int | identifier
