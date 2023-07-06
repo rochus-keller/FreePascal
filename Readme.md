@@ -4,4 +4,6 @@ It turned out that there is no formal EBNF grammar for the current FreePascal 3.
 
 The given syntax is gradually migrated to an LL(1) compatible grammar using [EbnfStudio](https://github.com/rochus-keller/EbnfStudio); from that a parser can be generated.
 
+The lexer was adapted/extended from the LisaPascal project and successfully tested with the FPC 3.2.2 source tree (even detected issues in the FPC source code).
+
 This is work in progress.

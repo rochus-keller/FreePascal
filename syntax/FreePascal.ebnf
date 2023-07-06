@@ -6,8 +6,7 @@
 // Therefore new attempt: transcribing all syntax diagrams from the lang ref to ebnf
 //   - added digit suffix to productions with same name but different structure
 //   - removed name variations (e.g. hint_directive vs hintdirective), added obviously missing 
-//     productions, and corrected obviously wrong productions 
-//     (e.g. with_statement, exception_address)
+//     productions, and corrected obviously wrong productions (e.g. with_statement, exception_address)
 //   - integrated unused in existing productions based on examples in fpc 3.2.2 source tree
 //   - could defer some of the undefined productions from examples in the fpc source tree, but not all, see TODO
 //   - consolidated productions to avoid alternative LL(1) conflicts
@@ -102,8 +101,7 @@ enumerated_type_ ::= assigned_enum_list // integrates identifier_list
 assigned_enum_list ::= assigned_enum_ { ',' assigned_enum_ }
 assigned_enum_ ::= identifier [ ('=' | ':=') expression ]
 
-structured_type ::= 
-				\LA: 1:class & 2:of\ class_reference_type
+structured_type ::=  \LA: 1:class & 2:of\ class_reference_type
 				| packable_type_
 				| interface_type | set_type | file_type
 
@@ -129,7 +127,7 @@ set_type ::= set of ordinal_type
 
 file_type ::= file [ of type_name ]
 
-pointer_type ::= 'ˆ' type_name
+pointer_type ::= '^' type_name
 
 procedural_type ::= func_proc_header [ of object | is 'nested' ] [ ';' call_modifiers ]
 func_proc_header ::= ( function | procedure ) formal_parameter_list [ ':' result_type ]
@@ -295,8 +293,8 @@ while_statement ::= while expression do statement
 
 with_statement ::= with variable_reference { ',' variable_reference }
 
-asm_statement ::= asm assembler_code end [ register_list ]
-assembler_code ::= // to be delivered by lexer with asm keyword
+asm_statement ::= asm // assembler_code to be delivered by lexer with asm keyword
+				end [ register_list ]
 register_list ::= '[' string_constant { ',' string_constant } ']'
 
 procedure_declaration ::= procedure_header ';' subroutine_block ';'
@@ -396,6 +394,7 @@ unsigned_number ::= unsigned_integer | unsigned_real
 unsigned_integer ::= decimal_int | hex_int | octal_int | binary_int
 
 character_string ::= ( quoted_string | control_string ) { quoted_string | control_string }
+control_string ::= '#' unsigned_integer
 
 // lexer tokens
 identifier ::=
@@ -405,4 +404,13 @@ hex_int ::=  // $ hex digit sequence
 octal_int ::= // & octal digit sequence
 binary_int ::= // % bin digit sequence
 quoted_string ::=
-control_string ::=
+
+// Helper Tokens
+Comment ::=
+Directive ::=
+comment- ::= '(*' '*)' '{' '}'
+
+// Pragmas
+%module ::= 'FreePascal'
+%namespace ::= 'Fp'
+%suppress ::= ';' ',' '.' '#'
