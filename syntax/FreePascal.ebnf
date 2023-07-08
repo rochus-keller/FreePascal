@@ -79,14 +79,18 @@ typed_constant ::= constant | address_constant | array_constant | record_constan
 
 type_declaration ::= identifier '=' type_ hintdirectives ';'
 
-type_ ::= 
-		\LA: 2:'helper'\ helper_type
+type_ ::= \LA: 2:'helper'\ helper_type
+		| \LA: 1: 'generic'\ generic_type 
+		| \LA: 1:('bitpacked' | array  | class | file | interface | object | packed | record | set ) \ 
+			structured_type 
+		| \LA: 1: 'specialize'\ specialized_type
 		| [type] simple_type // includes ident for type_alias 
-		| structured_type | pointer_type | procedural_type 
-		| generic_type | specialized_type
+		| pointer_type 
+		| procedural_type 
 
-simple_type ::= ordinal_type // includes ident for real types
-			| string_type
+simple_type ::= 
+			\LA: 1:'ansistring'\ string_type
+			| ordinal_type // includes ident for real types
 type_alias- ::= [type] identifier // migrated to type_
 type_name ::= identifier
 subrange_type ::= constant '..' constant
@@ -138,7 +142,7 @@ variable_modifiers ::= variable_modifier_ { variable_modifier_ }
 variable_modifier_ ::= 
 	absolute expression // integer expression or ident
 	| ';' ( 'export' 
-		|'cvar'
+		| 'cvar'
 		| 'external' [ string_constant ] [ 'name' string_constant ] ) 
 	| hint_directive 
 
@@ -169,8 +173,7 @@ method_definition ::= [class] ( func_proc_header | constructor_header | destruct
 					method_directives
 method_directives ::= [ 'virtual' ';' [ 'abstract' ';' ] ] [ call_modifiers ';' ]
 
-class_type ::= class 
-			[ [ 'abstract' | 'sealed' ] [ heritage2 ] { component_list2 } end ]
+class_type ::= class [ [ 'abstract' | 'sealed' ] [ heritage2 ] { component_list2 } end ]
 heritage2 ::= '(' type_name  // class type identifier
 				implemented_interfaces ')' 
 implemented_interfaces ::= { ',' identifier } // interface identifier
@@ -396,8 +399,21 @@ unsigned_integer ::= decimal_int | hex_int | octal_int | binary_int
 character_string ::= ( quoted_string | control_string ) { quoted_string | control_string }
 control_string ::= '#' unsigned_integer
 
+// with this trick we can use the non-keywords as idents where possible
+identifier ::= 'index' | 'name' | 'deprecated' | 'experimental' | 'platform'
+	| 'bitpacked' | 'public' | 'strict' | 'private' | 'nested'
+	| 'export' | 'cvar' | 'read' | 'write' | 'unimplemented' | 'ansistring' 
+	| 'nodefault' | 'static' | 'protected' | 'virtual' | 'abstract' 
+	| 'sealed' | 'published' | 'dynamic' | 'override' | 'message' | 'implements' | 'stored' 
+	| 'default' | 'generic' | 'specialize' | 'helper' | 'otherwise' | 'forward' | 'external' 
+	| 'assembler' | 'alias' | 'interrupt' | 'noreturn' | 'iocheck' | 'cdecl' | 'cppdecl' | 'hardfloat' 
+	| inline | 'local' | 'mwpascal' | 'ms_abi_default' | 'ms_abi_cdecl' | 'nostackframe' | 'overload' 
+	| 'pascal' | 'register'| 'safecall' | 'saveregisters' | 'softfloat' | 'stdcall' | 'sysv_abi_default' 
+	| 'sysv_abi_cdecl' | 'vectorcall' | 'varargs' | 'explicit' | 'enumerator' | 'inc' | 'dec' | 'at' 
+	| ident
+
 // lexer tokens
-identifier ::=
+ident ::=
 unsigned_real ::=
 decimal_int ::= // digit sequence
 hex_int ::=  // $ hex digit sequence

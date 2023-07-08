@@ -22,6 +22,7 @@ namespace Cd {
 			case Tok_DESCRIPTION: return "DESCRIPTION";
 			case Tok_E: return "E";
 			case Tok_ELSE: return "ELSE";
+			case Tok_ELSEIF: return "ELSEIF";
 			case Tok_ENDIF: return "ENDIF";
 			case Tok_ERROR: return "ERROR";
 			case Tok_EXTENDEDSYNTAX: return "EXTENDEDSYNTAX";
@@ -41,6 +42,7 @@ namespace Cd {
 			case Tok_INCLUDEPATH: return "INCLUDEPATH";
 			case Tok_INFO: return "INFO";
 			case Tok_INLINE: return "INLINE";
+			case Tok_INTERFACES: return "INTERFACES";
 			case Tok_IOCHECKS: return "IOCHECKS";
 			case Tok_L: return "L";
 			case Tok_LIBRARYPATH: return "LIBRARYPATH";
@@ -66,6 +68,8 @@ namespace Cd {
 			case Tok_P: return "P";
 			case Tok_PACKENUM: return "PACKENUM";
 			case Tok_PACKRECORDS: return "PACKRECORDS";
+			case Tok_POP: return "POP";
+			case Tok_PUSH: return "PUSH";
 			case Tok_Q: return "Q";
 			case Tok_R: return "R";
 			case Tok_RANGECHECKS: return "RANGECHECKS";
@@ -114,6 +118,7 @@ namespace Cd {
 			case Tok_DESCRIPTION: return "Tok_DESCRIPTION";
 			case Tok_E: return "Tok_E";
 			case Tok_ELSE: return "Tok_ELSE";
+			case Tok_ELSEIF: return "Tok_ELSEIF";
 			case Tok_ENDIF: return "Tok_ENDIF";
 			case Tok_ERROR: return "Tok_ERROR";
 			case Tok_EXTENDEDSYNTAX: return "Tok_EXTENDEDSYNTAX";
@@ -133,6 +138,7 @@ namespace Cd {
 			case Tok_INCLUDEPATH: return "Tok_INCLUDEPATH";
 			case Tok_INFO: return "Tok_INFO";
 			case Tok_INLINE: return "Tok_INLINE";
+			case Tok_INTERFACES: return "Tok_INTERFACES";
 			case Tok_IOCHECKS: return "Tok_IOCHECKS";
 			case Tok_L: return "Tok_L";
 			case Tok_LIBRARYPATH: return "Tok_LIBRARYPATH";
@@ -158,6 +164,8 @@ namespace Cd {
 			case Tok_P: return "Tok_P";
 			case Tok_PACKENUM: return "Tok_PACKENUM";
 			case Tok_PACKRECORDS: return "Tok_PACKRECORDS";
+			case Tok_POP: return "Tok_POP";
+			case Tok_PUSH: return "Tok_PUSH";
 			case Tok_Q: return "Tok_Q";
 			case Tok_R: return "Tok_R";
 			case Tok_RANGECHECKS: return "Tok_RANGECHECKS";
@@ -371,7 +379,13 @@ namespace Cd {
 			case 'L':
 				if( at(str,i+2) == 'S' ){
 					if( at(str,i+3) == 'E' ){
-						res = Tok_ELSE; i += 4;
+						if( at(str,i+4) == 'I' ){
+							if( at(str,i+5) == 'F' ){
+								res = Tok_ELSEIF; i += 6;
+							}
+						} else {
+							res = Tok_ELSE; i += 4;
+						}
 					}
 				}
 				break;
@@ -529,6 +543,23 @@ namespace Cd {
 						if( at(str,i+4) == 'N' ){
 							if( at(str,i+5) == 'E' ){
 								res = Tok_INLINE; i += 6;
+							}
+						}
+					}
+					break;
+				case 'T':
+					if( at(str,i+3) == 'E' ){
+						if( at(str,i+4) == 'R' ){
+							if( at(str,i+5) == 'F' ){
+								if( at(str,i+6) == 'A' ){
+									if( at(str,i+7) == 'C' ){
+										if( at(str,i+8) == 'E' ){
+											if( at(str,i+9) == 'S' ){
+												res = Tok_INTERFACES; i += 10;
+											}
+										}
+									}
+								}
 							}
 						}
 					}
@@ -822,7 +853,8 @@ namespace Cd {
 			}
 			break;
 		case 'P':
-			if( at(str,i+1) == 'A' ){
+			switch( at(str,i+1) ){
+			case 'A':
 				if( at(str,i+2) == 'C' ){
 					if( at(str,i+3) == 'K' ){
 						switch( at(str,i+4) ){
@@ -853,8 +885,22 @@ namespace Cd {
 						}
 					}
 				}
-			} else {
+				break;
+			case 'O':
+				if( at(str,i+2) == 'P' ){
+					res = Tok_POP; i += 3;
+				}
+				break;
+			case 'U':
+				if( at(str,i+2) == 'S' ){
+					if( at(str,i+3) == 'H' ){
+						res = Tok_PUSH; i += 4;
+					}
+				}
+				break;
+			default:
 				res = Tok_P; i += 1;
+				break;
 			}
 			break;
 		case 'Q':

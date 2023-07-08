@@ -34,6 +34,7 @@ public:
     QIODevice* getDevice() const { return d_in; }
     void setIgnoreComments( bool b ) { d_ignoreComments = b; }
     void setPackComments( bool b ) { d_packComments = b; }
+    void setCopyKeywords(bool b) { d_copyKeywords = b; }
 
     Token nextToken();
     Token peekToken(quint8 lookAhead = 1);
@@ -67,6 +68,7 @@ private:
     bool d_ignoreComments;  // don't deliver comment tokens
     bool d_packComments;    // Only deliver one Tok_Comment for /**/ instead of Tok_Lcmt and Tok_Rcmt
     bool d_lineCounted;
+    bool d_copyKeywords;
 };
 
 }

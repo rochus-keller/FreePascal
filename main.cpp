@@ -22,6 +22,7 @@
 #include <QDir>
 #include "FpLexer.h"
 #include "FpPpLexer.h"
+#include "FpParser.h"
 using namespace Fp;
 
 QStringList collectFiles( const QDir& dir, const QStringList& suffix )
@@ -61,7 +62,7 @@ static void checkTokens(const QStringList& files)
         Token t = lex.nextToken();
         while(t.isValid())
         {
-            //qDebug() << tokenTypeName(t.d_type) << t.d_lineNr << t.d_colNr << t.d_val;
+            qDebug() << tokenTypeName(t.d_type) << t.d_lineNr << t.d_colNr << t.d_val;
             if( t.d_type == Tok_Directive )
             {
                 //qDebug() << "directive" << file.mid(root.size()+1) << t.d_lineNr << t.d_colNr << t.d_val;
@@ -97,6 +98,67 @@ static void checkPp(const QStringList& files)
     }
 }
 
+static void dump(QTextStream& out, const SynTree* node, int level)
+{
+    QByteArray str;
+    if( node->d_tok.d_type == Tok_Invalid )
+        level--;
+    else if( node->d_tok.d_type < SynTree::R_First )
+    {
+        if( tokenTypeIsKeyword( node->d_tok.d_type ) )
+            str = tokenTypeString(node->d_tok.d_type);
+        else if( node->d_tok.d_type > TT_Specials )
+            str = QByteArray("\"") + node->d_tok.d_val + QByteArray("\"");
+        else
+            str = QByteArray("\"") + tokenTypeString(node->d_tok.d_type) + QByteArray("\"");
+
+    }else
+        str = SynTree::rToStr( node->d_tok.d_type );
+    if( !str.isEmpty() )
+    {
+        str += QByteArray("\t") + QFileInfo(node->d_tok.d_sourcePath).baseName().toUtf8() +
+                ":" + QByteArray::number(node->d_tok.d_lineNr) +
+                ":" + QByteArray::number(node->d_tok.d_colNr);
+        QByteArray ws;
+        for( int i = 0; i < level; i++ )
+            ws += "|  ";
+        str = ws + str;
+        out << str.data() << endl;
+    }
+    foreach( SynTree* sub, node->d_children )
+        dump( out, sub, level + 1 );
+}
+
+static void checkParser(const QStringList& files)
+{
+    int ok = 0;
+    foreach( const QString& file, files )
+    {
+        PpLexer lex;
+        lex.setSearchPaths(QStringList() << root);
+        lex.reset(file);
+        Parser p(&lex);
+        qDebug() << "**** parsing" << file.mid(root.size()+1);
+        p.RunParser();
+        if( !p.errors.isEmpty() )
+        {
+            foreach( const Parser::Error& e, p.errors )
+                qCritical() << e.path.mid(root.size()+1) << e.row << e.col << e.msg;
+        }else
+        {
+            ok++;
+            qDebug() << "ok";
+        }
+#if 0
+        QFile out(file + ".st");
+        out.open(QIODevice::WriteOnly);
+        QTextStream s(&out);
+        dump(s,&p.d_root,0);
+#endif
+    }
+    qDebug() << "#### finished with" << ok << "files ok of total" << files.size() << "files";
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
@@ -108,13 +170,14 @@ int main(int argc, char *argv[])
     QFileInfo info(a.arguments()[1]);
     if( info.isDir() )
     {
-        files = collectFiles(info.filePath(), QStringList() << "*.pas" << "*.pp" << "*.inc");
+        files = collectFiles(info.filePath(), QStringList() << "*.pas" << "*.pp");
         root = info.filePath();
     }else
         files.append(info.filePath());
 
     // checkTokens(files);
-    checkPp(files);
+    // checkPp(files);
+    checkParser(files);
 
     return 0;
 }

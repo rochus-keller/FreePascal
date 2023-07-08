@@ -177,12 +177,11 @@ namespace Fp {
 		Tok_xor,
 
 		TT_Specials,
-		Tok_assembler_code,
 		Tok_address_constant,
 		Tok_array_constant,
 		Tok_record_constant,
 		Tok_procedural_constant,
-		Tok_identifier,
+		Tok_ident,
 		Tok_unsigned_real,
 		Tok_decimal_int,
 		Tok_hex_int,

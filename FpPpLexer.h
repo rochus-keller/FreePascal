@@ -21,17 +21,26 @@
 #include "FpRowCol.h"
 #include <QStringList>
 #include <QHash>
+#include <QLinkedList>
 
 class QIODevice;
 
 namespace Fp
 {
-class FileSystem;
 
 class PpLexer
 {
 public:
-    typedef QHash<QByteArray,int> PpVars;
+    struct MacroToken
+    {
+        int d_type;
+        QByteArray d_val;
+        const char* d_id; // lower-case internalized version of d_val
+        MacroToken(int t = 0, const QByteArray& v = QByteArray(), const char* id = 0):d_type(t),d_val(v),d_id(id){}
+    };
+    typedef QList<MacroToken> Macro;
+    typedef QHash<const char*,Macro> Macros;
+
     struct Include
     {
         QString d_sourcePath; // the file where the include lives
@@ -53,11 +62,17 @@ public:
 protected:
     Token nextTokenImp();
     bool handleInclude(const QByteArray& data, const Token& t);
-    bool handleSetc(const QByteArray& data);
-    bool handleIfc(const QByteArray& data);
-    bool handleElsec();
-    bool handleEndc();
+    bool handleDefine(const QByteArray& data);
+    bool handleIf(const QByteArray& data);
+    bool handleElseif(const QByteArray& data);
+    bool handleElse();
+    bool handleEndif();
+    bool handleIfdef(const QByteArray& data);
+    bool handleIfndef(const QByteArray& data);
     bool error( const QString& msg);
+    Macro readMacro( const QByteArray& ) const;
+    Macro resolve( const Macro&, bool* changed = 0 ) const;
+    Macro resolveRecursive( const Macro& ) const;
 
     struct ppstatus
     {
@@ -106,7 +121,7 @@ private:
     QList<Token> d_buffer;
     QString d_err;
     quint32 d_sloc; // number of lines of code without empty or comment lines
-    PpVars d_ppVars;
+    Macros d_macros;
     QList<ppstatus> d_conditionStack;
     QList<Include> d_includes;
     QHash<QString,Ranges> d_mutes;

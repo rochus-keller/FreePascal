@@ -22,7 +22,7 @@
 using namespace Fp;
 
 Lexer::Lexer():
-    d_lastToken(Tok_Invalid),d_lineNr(0),d_colNr(0),d_in(0),
+    d_lastToken(Tok_Invalid),d_lineNr(0),d_colNr(0),d_in(0),d_copyKeywords(false),
     d_ignoreComments(true), d_packComments(true),d_sloc(0),d_lineCounted(false)
 {
 
@@ -112,10 +112,7 @@ Token Lexer::nextTokenImp()
     while( d_colNr >= d_line.size() )
     {
         if( d_in->atEnd() )
-        {
-            Token t = token( Tok_Eof, 0 );
-            return t;
-        }
+            return token( Tok_Eof, 0 );
         nextLine();
         skipWhiteSpace();
     }
@@ -198,10 +195,8 @@ Token Lexer::token(TokenType tt, int len, const QByteArray& val)
     d_lastToken = t;
     d_colNr += len;
     t.d_len = len;
-#if 1
-    if( tt == Tok_identifier )
+    if( tt == Tok_ident || ( d_copyKeywords && tokenTypeIsKeyword(tt) && tt != Tok_asm ) )
         t.d_id = Token::toId(val);
-#endif
     t.d_sourcePath = d_filePath;
     return t;
 }
@@ -229,10 +224,12 @@ Token Lexer::ident()
     {
         if( t == Tok_asm )
             return assembler();
+        else if( d_copyKeywords )
+            return token( t, off, str );
         else
             return token( t, off );
-    }else
-        return token( Tok_identifier, off, str );
+    }
+    return token( Tok_ident, off, str );
 }
 
 static inline bool isHexDigit( char c )

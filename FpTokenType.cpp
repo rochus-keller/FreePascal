@@ -168,12 +168,11 @@ namespace Fp {
 			case Tok_with: return "with";
 			case Tok_write: return "write";
 			case Tok_xor: return "xor";
-			case Tok_assembler_code: return "assembler_code";
 			case Tok_address_constant: return "address_constant";
 			case Tok_array_constant: return "array_constant";
 			case Tok_record_constant: return "record_constant";
 			case Tok_procedural_constant: return "procedural_constant";
-			case Tok_identifier: return "identifier";
+			case Tok_ident: return "ident";
 			case Tok_unsigned_real: return "unsigned_real";
 			case Tok_decimal_int: return "decimal_int";
 			case Tok_hex_int: return "hex_int";
@@ -352,12 +351,11 @@ namespace Fp {
 			case Tok_with: return "Tok_with";
 			case Tok_write: return "Tok_write";
 			case Tok_xor: return "Tok_xor";
-			case Tok_assembler_code: return "Tok_assembler_code";
 			case Tok_address_constant: return "Tok_address_constant";
 			case Tok_array_constant: return "Tok_array_constant";
 			case Tok_record_constant: return "Tok_record_constant";
 			case Tok_procedural_constant: return "Tok_procedural_constant";
-			case Tok_identifier: return "Tok_identifier";
+			case Tok_ident: return "Tok_ident";
 			case Tok_unsigned_real: return "Tok_unsigned_real";
 			case Tok_decimal_int: return "Tok_decimal_int";
 			case Tok_hex_int: return "Tok_hex_int";

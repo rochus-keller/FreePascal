@@ -15,11 +15,15 @@ SOURCES += main.cpp \
     FpPpLexer.cpp \
     FpToken.cpp \
     FpTokenType.cpp \
-    CdTokenType.cpp
+    CdTokenType.cpp \
+    FpSynTree.cpp \
+    FpParser.cpp
 
 HEADERS += \
     FpLexer.h \
     FpToken.h \
     FpPpLexer.h \
     FpTokenType.h \
-    CdTokenType.h
+    CdTokenType.h \
+    FpSynTree.h \
+    FpParser.h

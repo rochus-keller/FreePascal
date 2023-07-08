@@ -28,6 +28,7 @@ directive ::=
 	| 'CALLING'
 	| 'DEFINE'
 	| 'ELSE'
+	| 'ELSEIF'
 	| 'ENDIF'
 	| 'ERROR'
 	| 'FATAL'
@@ -84,6 +85,9 @@ directive ::=
 	| 'VERSION'
 	| 'STACKFRAMES'
 	| 'REFERENCEINFO' 
+	| 'INTERFACES' 
+	| 'PUSH'
+	| 'POP'
 	
 %module ::= 'FreePascal'
 %namespace ::= 'Cd'

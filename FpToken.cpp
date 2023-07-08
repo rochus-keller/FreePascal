@@ -24,8 +24,6 @@ static QHash<QByteArray,QByteArray> d_symbols;
 
 const char* Fp::Token::toId(const QByteArray& ident)
 {
-    if( ident.isEmpty() )
-        return "";
     const QByteArray lc = ident.toLower();
     QByteArray& sym = d_symbols[lc];
     if( sym.isEmpty() )

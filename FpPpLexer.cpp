@@ -25,8 +25,20 @@
 #include <QtDebug>
 using namespace Fp;
 
+static const char* s_defined = 0;
+static const char* s_undefined = 0;
+static const char* s_sizeof = 0;
+static const char* s_declared = 0;
+
 PpLexer::PpLexer():d_sloc(0)
 {
+    if( s_defined == 0 )
+    {
+        s_defined = Token::toId("defined");
+        s_undefined = Token::toId("undefined");
+        s_sizeof = Token::toId("sizeof");
+        s_declared = Token::toId("declared");
+    }
 }
 
 PpLexer::~PpLexer()
@@ -99,7 +111,7 @@ Token PpLexer::nextTokenImp()
             d_mutes.insert(t.d_sourcePath, d_stack.back().d_mutes);
             d_stack.pop_back();
             if( d_stack.isEmpty() )
-                return Token(Tok_Eof);
+                return t;
         }
         if( t.d_type == Tok_Directive )
         {
@@ -107,7 +119,21 @@ Token PpLexer::nextTokenImp()
             int pos = 2;
             Cd::TokenType cd = Cd::tokenTypeFromString( data.toUpper(), &pos );
             if( cd == Cd::Tok_I && data.length() >= 4 && ( data[3] == '+' || data[3] == '-' ) )
+            {
                 cd = Cd::Tok_IOCHECKS;
+                if( data[3] == '+' )
+                    data = "ON";
+                else
+                    data = "OFF";
+            }
+            else if( cd == Cd::Tok_H && data.length() >= 4 && ( data[3] == '+' || data[3] == '-' ) )
+            {
+                cd = Cd::Tok_LONGSTRINGS;
+                if( data[3] == '+' )
+                    data = "ON";
+                else
+                    data = "OFF";
+            }
             else if( cd != Cd::Tok_Invalid )
             {
                 const bool ok = data.length() > pos && ( ::isspace(data[pos]) || data[pos] == '}' );
@@ -125,24 +151,51 @@ Token PpLexer::nextTokenImp()
                 ok = handleInclude(data,t);
                 break;
             case Cd::Tok_DEFINE:
-                // qDebug() << "DEFINE" << data;
-                // TODO
+                ok = handleDefine(data);
+                break;
+            case Cd::Tok_IF:
+                ok = handleIf(data);
+                break;
+            case Cd::Tok_IFDEF:
+                ok = handleIfdef(data);
+                break;
+            case Cd::Tok_IFNDEF:
+                ok = handleIfndef(data);
+                break;
+            case Cd::Tok_ELSEIF:
+                ok = handleElseif(data);
+                break;
+            case Cd::Tok_ELSE:
+                ok = handleElse();
+                break;
+            case Cd::Tok_ENDIF:
+                ok = handleEndif();
+                break;
+            case Cd::Tok_MACRO:
+                qWarning() << "MACRO substitution not implemented" << d_stack.back().d_lex.getFilePath(); // TODO
                 break;
             default:
+                /* TODO The FP 3.2.2 compiler source uses in addition:
+                    APPTYPE
+                    ASMMODE
+                    GOTO
+                    INLINE
+                    IOCHECKS
+                    LONGSTRINGS
+                    MODE
+                    PACKENUM
+                    PUSH
+                    POP
+                    */
+#if 0
+                if( cd != Cd::Tok_Invalid )
+                    qWarning() << "MACRO not implemented" << Cd::tokenTypeString(cd);
+#endif
+                if( cd == Cd::Tok_Invalid )
+                    qWarning() << "unknown macro" << data;
                 break;
             }
 
-            /*
-            if( sym == PpIncl )
-            else if( sym == PpSetc )
-                ok = handleSetc(data);
-            else if( sym == PpIfc )
-                ok = handleIfc(data);
-            else if( sym == PpElsec )
-                ok = handleElsec();
-            else if( sym == PpEndc )
-                ok = handleEndc();
-                */
             if( !ok )
             {
                 Token err(Tok_Invalid,t.d_lineNr,t.d_colNr,d_err.toUtf8());
@@ -226,13 +279,13 @@ bool PpLexer::handleInclude(const QByteArray& data, const Token& t)
 class PpEval
 {
 public:
-    PpEval(const PpLexer::PpVars& vars, Lexer& lex):d_vars(vars),d_lex(lex){}
+    PpEval(const PpLexer::Macro& m, const PpLexer::Macros& mm):d_macro(m),d_macros(mm),d_pos(0){}
     bool eval()
     {
         try
         {
-            d_res = ppexpr();
-            if( d_lex.nextToken().d_type != Tok_Eof )
+            d_res = expr();
+            if( nextToken().d_type != Tok_Eof )
             {
                 d_err = "unexpected tokens after expression";
                 return false;
@@ -247,6 +300,22 @@ public:
     const QByteArray& getErr() const { return d_err; }
     int getRes() const { return d_res; }
 protected:
+    const PpLexer::MacroToken& nextToken()
+    {
+        static PpLexer::MacroToken eof(Tok_Eof);
+        if( d_pos < d_macro.size() )
+            return d_macro[d_pos++];
+        else
+            return eof;
+    }
+    const PpLexer::MacroToken& peekToken() const
+    {
+        static PpLexer::MacroToken eof(Tok_Eof);
+        if( d_pos < d_macro.size() )
+            return d_macro[d_pos];
+        else
+            return eof;
+    }
     void error(const QString& msg)
     {
         d_err = msg.toUtf8();
@@ -268,14 +337,14 @@ protected:
             return false;
         }
     }
-    int ppexpr()
+    bool expr()
     {
-        int res = ppsimpexpr();
-        Token t = d_lex.peekToken();
+        QVariant res = simple_expr();
+        PpLexer::MacroToken t = peekToken();
         if( isRel(t.d_type) )
         {
-            t = d_lex.nextToken();
-            int rhs = ppsimpexpr();
+            t = nextToken();
+            QVariant rhs = simple_expr();
             switch(t.d_type)
             {
             case Tok_Eq:
@@ -296,56 +365,41 @@ protected:
             case Tok_Geq:
                 res = (res >= rhs);
                 break;
+            default:
+                error(QString("unexpected operator '%1' in expr").arg(tokenTypeString(t.d_type)));
+                // TODO Tok_in
             }
-            t = d_lex.peekToken();
+            t = peekToken();
         }
-        return res;
+        return asBool(res);
     }
     static bool isAdd(int op)
     {
         switch(op)
         {
-        case Tok_Plus:
-        case Tok_Minus:
         case Tok_or:
             return true;
         default:
             return false;
         }
     }
-    int ppsimpexpr()
+    QVariant simple_expr()
     {
-        Token t = d_lex.peekToken();
-        bool minus = false;
-        if( t.d_type == Tok_Plus || t.d_type == Tok_Minus )
-        {
-            d_lex.nextToken();
-            minus = t.d_type == Tok_Minus;
-        }
-        int res = ppterm();
-        if( minus )
-            res = -res;
-
-        t = d_lex.peekToken();
+        QVariant res = term();
+        PpLexer::MacroToken t = peekToken();
         while( isAdd(t.d_type) )
         {
-            t = d_lex.nextToken();
-            int rhs = ppterm();
+            t = nextToken();
+            const bool rhs = asBool(term());
             switch(t.d_type)
             {
-            case Tok_Plus:
-                res = (res + rhs);
-                break;
-            case Tok_Minus:
-                res = (res - rhs);
-                break;
             case Tok_or:
-                res = (res || rhs);
+                res = ( asBool(res) || rhs);
                 break;
             default:
                 error(QString("unexpected operator '%1' in term").arg(tokenTypeString(t.d_type)));
             }
-            t = d_lex.peekToken();
+            t = peekToken();
         }
         return res;
     }
@@ -353,77 +407,99 @@ protected:
     {
         switch(op)
         {
-        case Tok_Star:
-        case Tok_Slash:
-        case Tok_Colon:
-        case Tok_div:
-        case Tok_mod:
         case Tok_and:
             return true;
         default:
             return false;
         }
     }
-    int ppterm()
+    QVariant term()
     {
-        int res = ppfactor();
-        Token t = d_lex.peekToken();
+        QVariant res = factor();
+        PpLexer::MacroToken t = peekToken();
         while( isMult(t.d_type) )
         {
-            t = d_lex.nextToken();
-            int rhs = ppfactor();
+            t = nextToken();
+            const bool rhs = asBool(factor());
             switch(t.d_type)
             {
-            case Tok_Star:
-                res = (res * rhs);
-                break;
-            case Tok_Slash:
-            case Tok_div:
-            case Tok_Colon:
-                res = (res / rhs);
-                break;
-            case Tok_mod:
-                res = (res % rhs);
-                break;
             case Tok_and:
-                res = (res && rhs);
+                res = (asBool(res) && rhs);
                 break;
             default:
                 error(QString("unexpected operator '%1' in term").arg(tokenTypeString(t.d_type)));
             }
-            t = d_lex.peekToken();
+            t = peekToken();
         }
         return res;
     }
-    int ppfactor()
+    bool call(const char* id)
     {
-        Token t = d_lex.nextToken();
+        PpLexer::MacroToken t = nextToken();
+        if( t.d_type != Tok_Lpar )
+            error(QString("expecting '('")); // TODO: FP supports these calls without ()
+        t = nextToken();
+        bool res = false;
+        if( id == s_defined )
+            res = d_macros.contains(t.d_id);
+        else if( id == s_undefined )
+            res = !d_macros.contains(t.d_id);
+        t = nextToken();
+        if( t.d_type != Tok_Rpar )
+            error(QString("expecting ')'"));
+        return res;
+    }
+    static bool asBool( const QVariant& v )
+    {
+        switch( v.type() )
+        {
+        case QVariant::ULongLong:
+            return v.toULongLong() != 0;
+        case QVariant::Double:
+            return v.toDouble() != 0.0;
+        case QVariant::Bool:
+            return v.toBool();
+        case QVariant::ByteArray:
+            {
+                const QByteArray str = v.toByteArray();
+                if( str.isEmpty() || str == "0" )
+                    return false;
+                else
+                    return true;
+            }
+        default:
+            return false;
+        }
+    }
+    QVariant factor()
+    {
+        PpLexer::MacroToken t = nextToken();
         switch( t.d_type )
         {
         case Tok_decimal_int:
-            return t.d_val.toInt();
+            return t.d_val.toULongLong();
         case Tok_hex_int:
-            return QByteArray::fromHex(t.d_val.mid(1)).toInt();
-        case Tok_identifier:
+            return t.d_val.mid(1).toULongLong(0,16);
+        case Tok_unsigned_real:
+            return t.d_val.toDouble();
+        case Tok_octal_int:
+            return t.d_val.mid(1).toULongLong(0,8);
+        case Tok_binary_int:
+            return t.d_val.mid(1).toULongLong(0,2);
+        case Tok_quoted_string:
+            return t.d_val.mid(1, t.d_val.size()-2);
+        case Tok_ident:
             {
-                const QByteArray name = t.d_val.toLower();
-                if( name == "true" )
-                    return 1;
-                if( name == "false" )
-                    return 0;
-#if 0
-                // apparently we don't care:
-                if( !d_vars.contains(name) )
-                    error(QString("preprocessor variable '%1' not defined").arg(t.d_val.constData()));
-                else
-#endif
-                    return d_vars.value(name);
+                if( t.d_id != s_defined && t.d_id != s_undefined && t.d_id != s_sizeof
+                        && t.d_id != s_declared )
+                    error(QString("cannot evaluate '%1'").arg(t.d_id));
+                return call(t.d_id);
             }
             break;
         case Tok_Lpar:
             {
-                const int res = ppexpr();
-                t = d_lex.nextToken();
+                const int res = expr();
+                t = nextToken();
                 if( t.d_type != Tok_Rpar )
                     error("expecting ')' after '(' in factor");
                 return res;
@@ -431,8 +507,8 @@ protected:
             break;
         case Tok_not:
             {
-                const int res = ppfactor();
-                return !res;
+                const QVariant res = factor();
+                return !asBool(res);
             }
             break;
         default:
@@ -441,45 +517,54 @@ protected:
         return int();
     }
 private:
-    PpLexer::PpVars d_vars;
-    Lexer& d_lex;
+    const PpLexer::Macros& d_macros;
+    PpLexer::Macro d_macro;
+    int d_pos;
     QByteArray d_err;
     int d_res;
 };
 
-bool PpLexer::handleSetc(const QByteArray& data)
+static inline bool isPseudoIdent( const PpLexer::MacroToken& t )
 {
-    QByteArray statement = data;
-    QBuffer buf(&statement);
-    buf.open(QIODevice::ReadOnly);
-    Lexer lex;
-    lex.setStream(&buf);
-    Token tt = lex.nextToken();
-    if( tt.d_type != Tok_identifier )
-        return error("expecting identifier on left side of SETC assignment");
-    const QByteArray var = tt.d_val.toLower();
-    if( var == "true" || var == "false" )
-        return error("cannot assign to true or false in SETC");
-    tt = lex.nextToken();
-    if( tt.d_type != Tok_ColonEq && tt.d_type != Tok_Eq )
-        return error("expecting ':=' or '=' in SETC assignment");
-    PpEval e(d_ppVars,lex);
-    if( !e.eval() )
-        return error(QString("%1 in SETC expression").arg(e.getErr().constData()));
-    d_ppVars[var] = e.getRes();
+    return tokenTypeIsKeyword(t.d_type) &&
+                    t.d_type != Tok_and && t.d_type != Tok_or &&
+                    t.d_type != Tok_not && t.d_type != Tok_in;
+}
+
+bool PpLexer::handleDefine(const QByteArray& data)
+{
+    Macro m = readMacro( data );
+    if( m.isEmpty() )
+        return error("$DEFINE requires at least a name");
+    if( m.first().d_type != Tok_ident && !isPseudoIdent(m.first()) )
+        return error("identifier expected for macro name");
+    if( m.size() > 1 )
+    {
+        if( m[1].d_type != Tok_ColonEq )
+            return error("':=' expected after identifier in macro definition");
+            // TODO: libndsfpc, libogcfpc, pasjpeg and sdl define macros with parameters, which is not in the spec!
+        for( int i = 2; i < m.size(); i++ )
+        {
+            if( m[i].d_type == Tok_Invalid )
+                return error(m[i].d_val);
+            // we accept any token here because any could be inserted into the code
+            // we delegate checks to the evaluator
+        }
+        d_macros[m.first().d_id] = m.mid(2);
+    }
     return true;
 }
 
-bool PpLexer::handleIfc(const QByteArray& data)
+bool PpLexer::handleIf(const QByteArray& data)
 {
-    QByteArray statement = data;
-    QBuffer buf(&statement);
-    buf.open(QIODevice::ReadOnly);
-    Lexer lex;
-    lex.setStream(&buf);
-    PpEval e(d_ppVars,lex);
+    Macro m = readMacro( data );
+    if( m.isEmpty() )
+        return error("$IF requires an expression");
+    m = resolveRecursive(m);
+
+    PpEval e(m,d_macros);
     if( !e.eval() )
-        return error(QString("%1 in SETC expression").arg(e.getErr().constData()));
+        return error(QString("%1 in $IF expression").arg(e.getErr().constData()));
 
     const bool cond = e.getRes();
     d_conditionStack.append( ppstatus(false) );
@@ -487,21 +572,63 @@ bool PpLexer::handleIfc(const QByteArray& data)
     return true;
 }
 
-bool PpLexer::handleElsec()
+bool PpLexer::handleElseif(const QByteArray& data)
 {
     if( ppthis().elseSeen || d_conditionStack.isEmpty() )
-        return error("ELSEC not expected here");
+        return error("$ELSEIF not expected here");
+    Macro m = readMacro( data );
+    if( m.isEmpty() )
+        return error("$ELSEIF requires an expression");
+    m = resolveRecursive(m);
+
+    PpEval e(m,d_macros);
+    if( !e.eval() )
+        return error(QString("%1 in $ELSEIF expression").arg(e.getErr().constData()));
+
+    const bool cond = e.getRes();
+    ppsetthis( ppouter().open && cond && !ppthis().openSeen );
+    return true;
+}
+
+bool PpLexer::handleElse()
+{
+    if( ppthis().elseSeen || d_conditionStack.isEmpty() )
+        return error("$ELSE not expected here");
     else
         ppsetthis( ppouter().open && !ppthis().openSeen, true );
     return true;
 }
 
-bool PpLexer::handleEndc()
+bool PpLexer::handleEndif()
 {
     if( d_conditionStack.isEmpty() )
-        return error("spurious ENDC");
+        return error("spurious $ENDIF");
     else
         d_conditionStack.pop_back();
+    return true;
+}
+
+bool PpLexer::handleIfdef(const QByteArray& data)
+{
+    Macro m = readMacro( data );
+    if( m.size() != 1 || ( m.first().d_type != Tok_ident && !isPseudoIdent(m.first())) )
+        return error("$IFDEF requires a single name");
+
+    const bool cond = d_macros.contains(m.first().d_id);
+    d_conditionStack.append( ppstatus(false) );
+    ppsetthis( ppouter().open && cond );
+    return true;
+}
+
+bool PpLexer::handleIfndef(const QByteArray& data)
+{
+    Macro m = readMacro( data );
+    if( m.size() != 1 || ( m.first().d_type != Tok_ident && !isPseudoIdent(m.first())) )
+        return error("$IFDEF requires a single name");
+
+    const bool cond = !d_macros.contains(m.first().d_id);
+    d_conditionStack.append( ppstatus(false) );
+    ppsetthis( ppouter().open && cond );
     return true;
 }
 
@@ -509,5 +636,77 @@ bool PpLexer::error(const QString& msg)
 {
     d_err = msg;
     return false;
+}
+
+PpLexer::Macro PpLexer::readMacro(const QByteArray& str) const
+{
+    Lexer lex;
+    lex.setIgnoreComments(true);
+    lex.setCopyKeywords(true);
+    QList<Token> t = lex.tokens(str);
+    Macro m;
+    for( int i = 0; i < t.size(); i++ )
+    {
+        MacroToken mt;
+        mt.d_type = t[i].d_type;
+        mt.d_val = t[i].d_val;
+        mt.d_id = t[i].d_id;
+        m << mt;
+    }
+    return m;
+}
+
+static inline bool isBuiltIn( const PpLexer::MacroToken& t )
+{
+    return t.d_type == Tok_ident && ( t.d_id == s_defined || t.d_id == s_undefined ||
+            t.d_id == s_sizeof || t.d_id != s_declared );
+}
+
+PpLexer::Macro PpLexer::resolve(const PpLexer::Macro& in, bool* changed) const
+{
+    Macro out;
+    int mods = 0;
+    int lock = 0;
+    for( int i = 0; i < in.size(); i++ )
+    {
+        if( lock )
+        {
+            lock--;
+            out << in[i];
+            continue;
+        }
+        const bool bi = isBuiltIn(in[i]);
+        if( bi )
+        {
+            // dont resolve idents which are arguments of defined() and co.
+            if( i+1 < in.size() && in[i+1].d_type == Tok_Lpar )
+                lock = 3;
+            else
+                lock = 1;
+            out << in[i];
+        }else if( in[i].d_type == Tok_ident || isPseudoIdent(in[i]) )
+        {
+            Macros::const_iterator j = d_macros.find(in[i].d_id);
+            if( j != d_macros.end() )
+            {
+                mods++;
+                out << j.value();
+            }else
+                out << in[i];
+        }else
+            out << in[i];
+    }
+    if( changed )
+        *changed = mods;
+    return out;
+}
+
+PpLexer::Macro PpLexer::resolveRecursive(const PpLexer::Macro& m) const
+{
+    Macro out = m;
+    bool changed = true;
+    while( changed )
+        out = resolve(out,&changed);
+    return out;
 }
 
