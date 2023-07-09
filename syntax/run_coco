@@ -1,4 +1,4 @@
-../../Coco/Coco ./FreePascal.atg -trace FP -o . -namespace Fp > ./coco_out.txt
+../../Coco/Coco ./FreePascal.atg -trace F -o . -namespace Fp > ./coco_out.txt
 
 mv ./Parser.h ../FpParser.h
 mv ./Parser.cpp ../FpParser.cpp
@@ -9,4 +9,4 @@ mv ./FpSynTree.cpp ..
 mv ./FpTokenType.h ..
 mv ./FpTokenType.cpp ..
 
-rm FreePascal.atg
+#rm FreePascal.atg
