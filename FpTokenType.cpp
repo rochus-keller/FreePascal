@@ -90,6 +90,7 @@ namespace Fp {
 			case Tok_in: return "in";
 			case Tok_inc: return "inc";
 			case Tok_index: return "index";
+			case Tok_inherited: return "inherited";
 			case Tok_initialization: return "initialization";
 			case Tok_inline: return "inline";
 			case Tok_interface: return "interface";
@@ -134,6 +135,7 @@ namespace Fp {
 			case Tok_read: return "read";
 			case Tok_record: return "record";
 			case Tok_register: return "register";
+			case Tok_reintroduce: return "reintroduce";
 			case Tok_repeat: return "repeat";
 			case Tok_resourcestring: return "resourcestring";
 			case Tok_safecall: return "safecall";
@@ -273,6 +275,7 @@ namespace Fp {
 			case Tok_in: return "Tok_in";
 			case Tok_inc: return "Tok_inc";
 			case Tok_index: return "Tok_index";
+			case Tok_inherited: return "Tok_inherited";
 			case Tok_initialization: return "Tok_initialization";
 			case Tok_inline: return "Tok_inline";
 			case Tok_interface: return "Tok_interface";
@@ -317,6 +320,7 @@ namespace Fp {
 			case Tok_read: return "Tok_read";
 			case Tok_record: return "Tok_record";
 			case Tok_register: return "Tok_register";
+			case Tok_reintroduce: return "Tok_reintroduce";
 			case Tok_repeat: return "Tok_repeat";
 			case Tok_resourcestring: return "Tok_resourcestring";
 			case Tok_safecall: return "Tok_safecall";
@@ -1068,6 +1072,21 @@ namespace Fp {
 						}
 					}
 					break;
+				case 'h':
+					if( at(str,i+3) == 'e' ){
+						if( at(str,i+4) == 'r' ){
+							if( at(str,i+5) == 'i' ){
+								if( at(str,i+6) == 't' ){
+									if( at(str,i+7) == 'e' ){
+										if( at(str,i+8) == 'd' ){
+											res = Tok_inherited; i += 9;
+										}
+									}
+								}
+							}
+						}
+					}
+					break;
 				case 'i':
 					if( at(str,i+3) == 't' ){
 						if( at(str,i+4) == 'i' ){
@@ -1595,6 +1614,25 @@ namespace Fp {
 								if( at(str,i+6) == 'e' ){
 									if( at(str,i+7) == 'r' ){
 										res = Tok_register; i += 8;
+									}
+								}
+							}
+						}
+					}
+					break;
+				case 'i':
+					if( at(str,i+3) == 'n' ){
+						if( at(str,i+4) == 't' ){
+							if( at(str,i+5) == 'r' ){
+								if( at(str,i+6) == 'o' ){
+									if( at(str,i+7) == 'd' ){
+										if( at(str,i+8) == 'u' ){
+											if( at(str,i+9) == 'c' ){
+												if( at(str,i+10) == 'e' ){
+													res = Tok_reintroduce; i += 11;
+												}
+											}
+										}
 									}
 								}
 							}

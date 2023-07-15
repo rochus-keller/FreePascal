@@ -11,6 +11,8 @@
 //   - could defer some of the undefined productions from examples in the fpc source tree, but not all, see TODO
 //   - consolidated productions to avoid alternative LL(1) conflicts
 //   - refactorings and prefixes to get rid of successor ambiguities
+//   - fixed/adapted syntax based on fpc 3.2.2 source tree while debugging the parser; a lot of stuff was missing
+//     (e.g. reintroduce modifier, Inherited statement)
 
 FreePascal ::= program_ | unit_ | library_
 
@@ -102,7 +104,7 @@ identifier_list ::= identifier { ',' identifier }
 
 enumerated_type ::= '(' enumerated_type_ { ',' enumerated_type_ } ')'
 enumerated_type_ ::= assigned_enum_list // integrates identifier_list
-assigned_enum_list ::= assigned_enum_ { ',' assigned_enum_ }
+assigned_enum_list ::= assigned_enum_ { \LL:2\ ',' assigned_enum_ }
 assigned_enum_ ::= identifier [ ('=' | ':=') expression ]
 
 structured_type ::=  \LA: 1:class & 2:of\ class_reference_type
@@ -114,10 +116,10 @@ packable_type_ ::= [ packed | 'bitpacked' ] ( array_type | record_type | object_
 array_type ::= array [ '[' ordinal_type { ',' ordinal_type } ']' ] of type_
 
 old_record_type- ::= record [ field_list ] end
-field_list ::= [ fixed_fields [';'] ] [ variant_part ] [';']
+field_list ::= [ fixed_fields ] [';'] [ variant_part ] [';']
 variant_part ::= case [ \LA: 2:':'\ identifier ':' ] ordinal_type of variant { \LL:2\ ';' variant }
 variant ::= constant { ',' constant } ':' '(' field_list ')'
-fixed_fields ::= fixed_field_ { ';' fixed_field_ }
+fixed_fields ::= fixed_field_ { \LL:2\ ';' fixed_field_ }
 fixed_field_ ::= identifier_list ':' type_
 
 record_type ::= record { component_list3 } end
@@ -130,16 +132,16 @@ record_operator_definition ::= class operator_definition
 
 set_type ::= set of ordinal_type
 
-file_type ::= file [ of type_name ]
+file_type ::= file [ \LL:2\ of type_name ]
 
 pointer_type ::= '^' type_name
 
-procedural_type ::= func_proc_header [ of object | is 'nested' ] [ ';' call_modifiers ]
-func_proc_header ::= ( function | procedure ) formal_parameter_list [ ':' result_type ]
+procedural_type ::= func_proc_header [ \LL:2\ of object | \LL:2\ is 'nested' ] [ \LL:2\ ';' call_modifiers ]
+func_proc_header ::= ( function | procedure ) identifier formal_parameter_list [ ':' result_type ]
 call_modifiers ::= 'register' | 'cdecl' | 'pascal' | 'stdcall' | 'safecall' | inline
 
-variable_declaration ::= identifier ':' type_ [ '=' expression ] [ variable_modifiers ] [hintdirectives] ';'
-variable_modifiers ::= variable_modifier_ { variable_modifier_ }
+variable_declaration ::= identifier ':' type_ [ '=' expression ] [ \LL:2\ variable_modifiers ] [hintdirectives] ';'
+variable_modifiers ::= variable_modifier_ { \LL:2\ variable_modifier_ }
 variable_modifier_ ::= 
 	absolute expression // integer expression or ident
 	| ';' ( 'export' 
@@ -163,8 +165,8 @@ field_definition ::= [ [class] var ] identifier_list ':' type_ ';' [ 'static' ';
 const_definition ::= const identifier '=' constant_expression ';'
 object_visibility_specifier ::= 'private' | 'protected' | 'public'
 
-constructor_declaration ::= constructor_header ';' subroutine_block
-destructor_declaration ::= destructor_header ';' subroutine_block
+constructor_declaration ::= constructor_header ';' subroutine_block ';'
+destructor_declaration ::= destructor_header ';' subroutine_block ';'
 constructor_header ::= constructor  identifier [ '.' identifier ] formal_parameter_list
 destructor_header ::= destructor identifier [ '.' identifier ] formal_parameter_list
 					// original:  ( identifier | qualified_method_identifier )
@@ -184,10 +186,11 @@ class_part ::= constant_declaration_part | type_declaration_part |
 				// includes class_variable_declaration_part
 class_visibility_specifier ::= 'public' | 'published' | [ 'strict' ] ( 'private' | 'protected' )
 method_definition2 ::= ( func_proc_header | constructor_header | destructor_header ) ';'
-					method_directives2 [ call_modifiers ';' ]
-method_directives2 ::= [ ( 'virtual' | 'dynamic' ) [ ';' 'abstract' ]
+					[ method_directives2 ';' ] [ call_modifiers ';' ]
+method_directives2 ::= ( 'virtual' | 'dynamic' ) [ \LL:2\ ';' ( 'abstract' | 'reintroduce' ) ]
 					| 'override'
-					| 'message' ( integer_constant | string_constant ) ] ';'
+					| 'reintroduce'
+					| 'message' ( integer_constant | string_constant )  
 field_definition2 ::= identifier_list ':' type_ ';' [ 'static' ';' ]
 class_variable_declaration_part- ::= class variable_declaration_part
 
@@ -246,12 +249,14 @@ address_factor ::= '@' identifier [ '.' identifier ]
 
 constant_expression ::= expression
 
-statement ::= [ \LL:2\ label_def ':' ] ( simple_statement | structured_statement | asm_statement )
+statement ::= [ \LL:2\ label_def ':' ] [ simple_statement | structured_statement | asm_statement ]
 
-simple_statement ::= assig_or_call | goto_statement | raise_statement
+simple_statement ::= inherited_call | assig_or_call | goto_statement | raise_statement
 
 assig_or_call ::= identifier [ '.' identifier ] ( assigop expression | [ actual_parameter_list ] )
 			// replaces assignment_statement and procedure_statement
+
+inherited_call ::= 'inherited' [ identifier [ actual_parameter_list ] ]
 
 assignment_statement- ::= ( variable_reference | function_identifier ) assigop expression
 assigop ::= ':=' | '+=' | '-=' | '*=' | '/='
@@ -270,9 +275,9 @@ repetitive_statement ::= for_statement | repeat_statement | while_statement
 
 compound_statement ::= begin statement { ';' statement } end
 
-statement_list ::= statement { ';' statement }
+statement_list ::= statement { \LL:2\ ';' statement }
 
-case_statement ::= case expression of case_part { ';' case_part } [ else_part ] [ ';' ] end
+case_statement ::= case expression of case_part { \LL:2\ ';' case_part } [ else_part ] [ ';' ] end
 case_part ::= case_range { ',' case_range } ':' statement
 case_range ::= constant [ '..' constant ]
 else_part ::= ( else | 'otherwise' ) statement_list
@@ -304,15 +309,15 @@ register_list ::= '[' string_constant { ',' string_constant } ']'
 procedure_declaration ::= procedure_header ';' subroutine_block ';'
 procedure_header ::= procedure  identifier ['.' identifier] formal_parameter_list
 					// original:  ( identifier | qualified_method_identifier )
-					[ modifiers ] [hintdirectives]
+					[ \LL:2\ modifiers ] [hintdirectives]
 subroutine_block ::= block | external_directive | asm_block | 'forward'
 
 function_declaration ::= function_header ';' subroutine_block ';'
 function_header ::= function identifier ['.' identifier] formal_parameter_list ':' result_type
 					// original:  ( identifier | qualified_method_identifier )
-					[ modifiers ] [hintdirectives]
+					[ \LL:2\ modifiers ] [hintdirectives]
 
-formal_parameter_list ::= '(' parameter_declaration { ';' parameter_declaration } ')'
+formal_parameter_list ::= [ '(' parameter_declaration { ';' parameter_declaration } ')' ]
 parameter_declaration ::= value_parameter | variable_parameter | out_parameter |  constant_parameter
 value_parameter ::= identifier_list ':' [ array of ] parameter_type [ '=' default_parameter_value ]
 				// includes: identifier ':' type_name '=' default_parameter_value
@@ -325,8 +330,8 @@ external_directive ::= 'external' [ string_constant [ 'name' string_constant | '
 
 asm_block ::= 'assembler' ';' { declaration_part } // TODO  asm_statement
 
-modifiers ::= modifier { modifier }
-modifier ::= ';' (
+modifiers ::= ';' modifier { \LL:2\ ';' modifier }
+modifier ::= 
 	'public' [ 'name' string_constant ]
 	| 'export'
 	| 'alias' ':' string_constant
@@ -334,7 +339,6 @@ modifier ::= ';' (
 	| 'noreturn'
 	| 'iocheck'
 	| call_modifiers2
-	)
 call_modifiers2 ::= 'cdecl' | 'cppdecl' | 'hardfloat' | inline | 'local' | 'mwpascal' | 'ms_abi_default' | 'ms_abi_cdecl'
 				| 'nostackframe' | 'overload' | 'pascal' | 'register'| 'safecall' | 'saveregisters' | 'softfloat'
 				| 'stdcall' | 'sysv_abi_default' | 'sysv_abi_cdecl' | 'vectorcall' | 'varargs'

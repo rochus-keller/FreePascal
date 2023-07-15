@@ -62,11 +62,11 @@ static void checkTokens(const QStringList& files)
         Token t = lex.nextToken();
         while(t.isValid())
         {
-            qDebug() << tokenTypeName(t.d_type) << t.d_lineNr << t.d_colNr << t.d_val;
+            qDebug() << tokenTypeName(t.d_type) << t.d_lineNr << t.d_colNr << t.d_val.simplified().left(80);
             if( t.d_type == Tok_Directive )
             {
                 //qDebug() << "directive" << file.mid(root.size()+1) << t.d_lineNr << t.d_colNr << t.d_val;
-                qDebug() << t.d_val.constData();
+                // qDebug() << t.d_val.constData();
             }
             t = lex.nextToken();
         }
@@ -88,7 +88,7 @@ static void checkPp(const QStringList& files)
         Token t = lex.nextToken();
         while(t.isValid())
         {
-            //qDebug() << tokenTypeName(t.d_type) << t.d_lineNr << t.d_colNr << t.d_val;
+            qDebug() << tokenTypeName(t.d_type) << t.d_lineNr << t.d_colNr << t.d_val.simplified().left(80);
             t = lex.nextToken();
         }
         if( !t.isEof() )
@@ -132,11 +132,26 @@ static void dump(QTextStream& out, const SynTree* node, int level)
 static void checkParser(const QStringList& files)
 {
     int ok = 0;
+    class Lex : public Scanner
+    {
+    public:
+        PpLexer lex;
+        Token next()
+        {
+            return lex.nextToken();
+        }
+
+        Token peek(int offset)
+        {
+            return lex.peekToken(offset);
+        }
+    };
+
     foreach( const QString& file, files )
     {
-        PpLexer lex;
-        lex.setSearchPaths(QStringList() << root);
-        lex.reset(file);
+        Lex lex;
+        lex.lex.setSearchPaths(QStringList() << root);
+        lex.lex.reset(file);
         Parser p(&lex);
         qDebug() << "**** parsing" << file.mid(root.size()+1);
         p.RunParser();
@@ -175,8 +190,8 @@ int main(int argc, char *argv[])
     }else
         files.append(info.filePath());
 
-    // checkTokens(files);
-    // checkPp(files);
+    //checkTokens(files);
+    //checkPp(files);
     checkParser(files);
 
     return 0;

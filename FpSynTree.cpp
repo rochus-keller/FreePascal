@@ -111,6 +111,7 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_implementation_part: return "implementation_part";
 		case R_implemented_interfaces: return "implemented_interfaces";
 		case R_implements_specifier: return "implements_specifier";
+		case R_inherited_call: return "inherited_call";
 		case R_initial_value: return "initial_value";
 		case R_initialization_part: return "initialization_part";
 		case R_integer_constant: return "integer_constant";

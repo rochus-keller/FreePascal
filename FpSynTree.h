@@ -112,6 +112,7 @@ namespace Fp {
 			R_implementation_part,
 			R_implemented_interfaces,
 			R_implements_specifier,
+			R_inherited_call,
 			R_initial_value,
 			R_initialization_part,
 			R_integer_constant,

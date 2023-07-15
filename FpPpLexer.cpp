@@ -103,6 +103,7 @@ Token PpLexer::nextTokenImp()
     while( t.d_type == Tok_Directive || t.d_type == Tok_Comment || t.d_type == Tok_Eof )
     {
         const bool statusBefore = ppthis().open;
+        // qDebug() << statusBefore << t.d_lineNr << t.d_val;
         if( t.d_type == Tok_Eof )
         {
             d_files.removeAll(d_stack.back().d_lex.getDevice());
@@ -145,14 +146,6 @@ Token PpLexer::nextTokenImp()
             bool ok = true;
             switch( cd )
             {
-            case Cd::Tok_I:
-            case Cd::Tok_INCLUDE:
-                // TODO: include %DATE%
-                ok = handleInclude(data,t);
-                break;
-            case Cd::Tok_DEFINE:
-                ok = handleDefine(data);
-                break;
             case Cd::Tok_IF:
                 ok = handleIf(data);
                 break;
@@ -171,8 +164,19 @@ Token PpLexer::nextTokenImp()
             case Cd::Tok_ENDIF:
                 ok = handleEndif();
                 break;
+            case Cd::Tok_I:
+            case Cd::Tok_INCLUDE:
+                // TODO: include %DATE%
+                if( statusBefore )
+                    ok = handleInclude(data,t);
+                break;
+            case Cd::Tok_DEFINE:
+                if( statusBefore )
+                    ok = handleDefine(data);
+                break;
             case Cd::Tok_MACRO:
-                qWarning() << "MACRO substitution not implemented" << d_stack.back().d_lex.getFilePath(); // TODO
+                if( statusBefore )
+                    qWarning() << "MACRO substitution not implemented" << d_stack.back().d_lex.getFilePath(); // TODO
                 break;
             default:
                 /* TODO The FP 3.2.2 compiler source uses in addition:
@@ -188,11 +192,9 @@ Token PpLexer::nextTokenImp()
                     POP
                     */
 #if 0
-                if( cd != Cd::Tok_Invalid )
-                    qWarning() << "MACRO not implemented" << Cd::tokenTypeString(cd);
-#endif
-                if( cd == Cd::Tok_Invalid )
+                if( statusBefore && cd == Cd::Tok_Invalid )
                     qWarning() << "unknown macro" << data;
+#endif
                 break;
             }
 
@@ -216,7 +218,7 @@ Token PpLexer::nextTokenImp()
         if( !ppthis().open )
         {
             t = d_stack.back().d_lex.peekToken();
-            while( t.d_type != Tok_Comment && t.d_type != Tok_Eof )
+            while( t.d_type != Tok_Comment && t.d_type != Tok_Directive && t.d_type != Tok_Eof )
             {
                 t = d_stack.back().d_lex.nextToken();
                 t = d_stack.back().d_lex.peekToken();
