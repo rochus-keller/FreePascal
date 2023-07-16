@@ -172,6 +172,7 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_resourcestring_declaration_part: return "resourcestring_declaration_part";
 		case R_result_identifier: return "result_identifier";
 		case R_result_type: return "result_type";
+		case R_selector: return "selector";
 		case R_set_constructor: return "set_constructor";
 		case R_set_group: return "set_group";
 		case R_set_type: return "set_type";

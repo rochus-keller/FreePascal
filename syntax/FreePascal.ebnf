@@ -5,14 +5,14 @@
 //   - Unfortunately not complete (e.g. missing generics ) and different productions than lang ref
 // Therefore new attempt: transcribing all syntax diagrams from the lang ref to ebnf
 //   - added digit suffix to productions with same name but different structure
-//   - removed name variations (e.g. hint_directive vs hintdirective), added obviously missing 
-//     productions, and corrected obviously wrong productions (e.g. with_statement, exception_address)
+//   - removed name variations (e.g. hint_directive vs hintdirective), added obviously missing productions
+//     (e.g. variable_reference), and corrected obviously wrong productions (e.g. with_statement, exception_address)
 //   - integrated unused in existing productions based on examples in fpc 3.2.2 source tree
 //   - could defer some of the undefined productions from examples in the fpc source tree, but not all, see TODO
 //   - consolidated productions to avoid alternative LL(1) conflicts
 //   - refactorings and prefixes to get rid of successor ambiguities
 //   - fixed/adapted syntax based on fpc 3.2.2 source tree while debugging the parser; a lot of stuff was missing
-//     (e.g. reintroduce modifier, Inherited statement)
+//     (e.g. reintroduce modifier, inherited statement und expression)
 
 FreePascal ::= program_ | unit_ | library_
 
@@ -56,7 +56,7 @@ resourcestring_declaration_part ::= resourcestring string_constant_declaration
 
 type_declaration_part ::= type type_declaration {  \LA: 1:ident & 2:'='\ type_declaration }
 
-variable_declaration_part ::= var variable_declaration { \LA: 1:ident & 2:':'\ variable_declaration }
+variable_declaration_part ::= var variable_declaration { \LA: 1:ident & 2:(':'|',')\ variable_declaration }
 
 threadvariable_declaration_part ::= threadvar variable_declaration 
 								{ \LA: 1:ident & 2:':'\ variable_declaration }
@@ -140,8 +140,11 @@ procedural_type ::= func_proc_header [ \LL:2\ of object | \LL:2\ is 'nested' ] [
 func_proc_header ::= ( function | procedure ) identifier formal_parameter_list [ ':' result_type ]
 call_modifiers ::= 'register' | 'cdecl' | 'pascal' | 'stdcall' | 'safecall' | inline
 
-variable_declaration ::= identifier ':' type_ [ '=' expression ] [ \LL:2\ variable_modifiers ] [hintdirectives] ';'
-variable_modifiers ::= variable_modifier_ { \LL:2\ variable_modifier_ }
+variable_declaration ::= identifier_list ':' type_ [ '=' expression ] 
+                                        [ \LA: 1:absolute | (1:';' & 2:('export'|'cvar'|'external'))\ variable_modifiers ] 
+                                        [hintdirectives] ';'
+variable_modifiers ::= variable_modifier_ 
+                                        { \LA: 1:absolute | (1:';' & 2:('export'|'cvar'|'external'))\ variable_modifier_ }
 variable_modifier_ ::= 
 	absolute expression // integer expression or ident
 	| ';' ( 'export' 
@@ -229,8 +232,8 @@ adop ::= '+' | '-' | or | xor
 term ::= factor { mulop factor }
 mulop ::= '*' | '/' | div | mod | and | shl | shr | as
 factor ::= '(' expression ')' | varref_or_funcall_or_constid_or_cast | unsigned_constant |
-		not factor | sign factor | set_constructor | address_factor
-varref_or_funcall_or_constid_or_cast ::= identifier [ '.' identifier ] [ actual_parameter_list ]
+		not factor | sign factor | set_constructor | address_factor | inherited_call
+varref_or_funcall_or_constid_or_cast ::= selector  [ actual_parameter_list ]
 				// includes constant_identifier and qualified_method_designator
 unsigned_constant ::= unsigned_number | character_string | nil
 sign ::= '+' | '-'
@@ -253,7 +256,7 @@ statement ::= [ \LL:2\ label_def ':' ] [ simple_statement | structured_statement
 
 simple_statement ::= inherited_call | assig_or_call | goto_statement | raise_statement
 
-assig_or_call ::= identifier [ '.' identifier ] ( assigop expression | [ actual_parameter_list ] )
+assig_or_call ::= variable_reference ( assigop expression | [ actual_parameter_list ] )
 			// replaces assignment_statement and procedure_statement
 
 inherited_call ::= 'inherited' [ identifier [ actual_parameter_list ] ]
@@ -267,7 +270,7 @@ procedure_statement- ::= ( procedure_identifier | method_designator | qualified_
 goto_statement ::= goto label_def
 
 structured_statement ::= compound_statement | conditional_statement | repetitive_statement
-						with_statement | try_statement
+						| with_statement | try_statement
 
 conditional_statement ::= case_statement | if_statement
 
@@ -372,7 +375,7 @@ property_declaration_part ::= property property_definition ';' { property_defini
 exception_instance ::= identifier
 result_identifier ::= identifier
 qualified_method_identifier- ::= identifier '.' identifier
-variable_reference ::= identifier
+variable_reference ::= selector
 function_identifier- ::= identifier
 procedure_identifier- ::= identifier
 variable_identifier ::= identifier
@@ -403,6 +406,8 @@ unsigned_integer ::= decimal_int | hex_int | octal_int | binary_int
 
 character_string ::= ( quoted_string | control_string ) { quoted_string | control_string }
 control_string ::= '#' unsigned_integer
+
+selector ::= identifier { '.' identifier | '[' expression {',' expression} ']' }
 
 // with this trick we can use the non-keywords as idents where possible
 identifier ::= ident

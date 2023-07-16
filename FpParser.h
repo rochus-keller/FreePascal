@@ -226,6 +226,7 @@ namespace Fp {
 		void unsigned_integer(SynTree*);
 		void character_string(SynTree*);
 		void control_string(SynTree*);
+		void selector(SynTree*);
 		void identifier(SynTree*);
 	protected:
 		Token cur;

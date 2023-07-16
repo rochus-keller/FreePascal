@@ -173,6 +173,7 @@ namespace Fp {
 			R_resourcestring_declaration_part,
 			R_result_identifier,
 			R_result_type,
+			R_selector,
 			R_set_constructor,
 			R_set_group,
 			R_set_type,
