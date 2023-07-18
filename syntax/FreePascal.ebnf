@@ -13,6 +13,13 @@
 //   - refactorings and prefixes to get rid of successor ambiguities
 //   - fixed/adapted syntax based on fpc 3.2.2 source tree while debugging the parser; a lot of stuff was missing
 //     (e.g. reintroduce modifier, inherited statement und expression)
+//   - get rid of pseudo keywords (section "1.3.3 Modifiers" in the spec) as far as possible; seems to generate even more problems
+//  Intermediate conclusion: we cannot parse all of the FP 3.2.2 compiler sources with a generated parser ein either
+//     way, with or without pseudo keywords; if we allow for pseudo keyword, e.g. line 238 in aasmbase.pas gives an error;
+//     if we do without pseudo keywords, var modifiers are confused with next var declaration; this can only be avoided
+//     by a (hand crafted) parser able to do decisions about how to use idents based on context.
+
+#define _have_pseudo_keyords_
 
 FreePascal ::= program_ | unit_ | library_
 
@@ -66,10 +73,15 @@ func_proc_declaration_part ::= procedure_declaration | function_declaration
 
 statement_part ::= compound_statement
 
-hint_directive ::= 'deprecated' [ string_constant ]
+hint_directive ::= 
+#ifdef _have_pseudo_keyords_
+                                'deprecated' [ string_constant ]
 				| 'experimental' 
 				| 'platform'
 				| 'unimplemented'
+#else
+                                 ident [ string_constant ]
+#endif
 
 hintdirectives ::= hint_directive { \LL:2\ ';' hint_directive }
 
@@ -83,22 +95,23 @@ typed_constant ::= constant | address_constant | array_constant | record_constan
 type_declaration ::= identifier '=' type_ [hintdirectives] ';'
 
 type_ ::= \LA: 2:'helper'\ helper_type
-		| generic_type 
-		| structured_type 
-		| specialized_type
+		| \LA: 1:'generic'\ generic_type 
+		| \LL:1\ structured_type 
+		| \LA: 1:'specialize'\ specialized_type
 		| [type] simple_type // includes ident for type_alias 
 		| pointer_type 
 		| procedural_type 
 
 simple_type ::= 
-			string_type
+			\LA: 1:(string | 'ansistring' )\ string_type
 			| ordinal_type // includes ident for real types
 type_alias- ::= [type] identifier // migrated to type_
 type_name ::= identifier
 subrange_type ::= constant '..' constant
 string_type ::= ( string | 'ansistring' ) [ '[' unsigned_integer ']' | '(' unsigned_integer ')' ] 
-ordinal_type ::= subrange_type | enumerated_type 
-			| identifier // Integer, Shortint, SmallInt, Longint, ... , boolean, chars
+ordinal_type ::= \LA: 2:'..'\ subrange_type 
+                    | enumerated_type 
+                    | identifier // Integer, Shortint, SmallInt, Longint, ... , boolean, chars
 
 identifier_list ::= identifier { ',' identifier }
 
@@ -136,11 +149,27 @@ file_type ::= file [ \LL:2\ of type_name ]
 
 pointer_type ::= '^' type_name
 
-procedural_type ::= func_proc_header [ \LL:2\ of object | \LL:2\ is 'nested' ] [ \LL:2\ ';' call_modifiers ]
+procedural_type ::= func_proc_header [ \LL:2\ of object 
+#ifdef _have_pseudo_keyords_
+                                | \LL:2\ is 'nested' 
+#else
+                                | \LL:2\ is ident 
+#endif
+                                ] [ \LL:2\ ';' call_modifiers ]
 func_proc_header ::= ( function | procedure ) identifier formal_parameter_list [ ':' result_type ]
-call_modifiers ::= 'register' | 'cdecl' | 'pascal' | 'stdcall' | 'safecall' | inline
+call_modifiers ::= inline
+#ifdef _have_pseudo_keyords_
+                                | 'register' | 'cdecl' | 'pascal' | 'stdcall' | 'safecall'
+#else
+                                | ident
+#endif
+
+#ifndef _have_pseudo_keyords_
+modifier_hintdirective2 ::= ( ident [ string_constant ] [ ident string_constant ]  | absolute expression)
+#endif
 
 variable_declaration ::= identifier_list ':' type_ [ '=' expression ] 
+#ifdef _have_pseudo_keyords_
                                         [ \LA: 1:absolute | (1:';' & 2:('export'|'cvar'|'external'))\ variable_modifiers ] 
                                         [hintdirectives] ';'
 variable_modifiers ::= variable_modifier_ 
@@ -150,6 +179,10 @@ variable_modifier_ ::=
 	| ';' ( 'export' 
 		| 'cvar'
 		| 'external' [ string_constant ] [ 'name' string_constant ] ) 
+#else
+                // unfortunately this also fits the next variable_declaration; so we cannot cover this without pseudo keywords
+                modifier_hintdirective2 { ';' modifier_hintdirective2 }
+#endif
 
 property_definition ::= identifier [ property_interface ] property_specifiers
 property_interface ::= [ property_parameter_list ] ':' type_name [ 'index' integer_constant ]
@@ -201,7 +234,7 @@ property_definition2 ::= property identifier [ property_interface ] property_spe
 property_specifiers2 ::= [ read_specifier ] [ write_specifier | implements_specifier ] [ default_specifier ]
 					[ stored_specifier ] [ defaultarraypropertyspecifier ]
 implements_specifier ::= 'implements' identifier { ',' identifier }
-stored_specifier ::= 'stored' ( constant | identifier )
+stored_specifier ::= 'stored' ( constant ) // | identifier covered by constant
 defaultarraypropertyspecifier ::= ';' 'default'
 
 interface_type ::= interface [ heritage ] [ guid ] { component_list2 } end // heritage only interface type identifiers
@@ -312,13 +345,25 @@ register_list ::= '[' string_constant { ',' string_constant } ']'
 procedure_declaration ::= procedure_header ';' subroutine_block ';'
 procedure_header ::= procedure  identifier ['.' identifier] formal_parameter_list
 					// original:  ( identifier | qualified_method_identifier )
-					[ \LL:2\ modifiers ] [hintdirectives]
+					modifiers_hintdirectives
 subroutine_block ::= block | external_directive | asm_block | 'forward'
 
 function_declaration ::= function_header ';' subroutine_block ';'
 function_header ::= function identifier ['.' identifier] formal_parameter_list ':' result_type
 					// original:  ( identifier | qualified_method_identifier )
-					[ \LL:2\ modifiers ] [hintdirectives]
+					modifiers_hintdirectives
+
+#ifndef _have_pseudo_keyords_
+modifier_hintdirective ::= ( inline | ident [ \LL:2\ ( ident | ':' ) string_constant ] )
+#endif
+
+modifiers_hintdirectives ::= 
+#ifdef _have_pseudo_keyords_
+                                        [ \LL:2\ modifiers ] [hintdirectives]
+#else
+                                        { \LL:2\ ';' modifier_hintdirective }
+#endif
+
 
 formal_parameter_list ::= [ '(' parameter_declaration { ';' parameter_declaration } ')' ]
 parameter_declaration ::= value_parameter | variable_parameter | out_parameter |  constant_parameter
@@ -333,6 +378,7 @@ external_directive ::= 'external' [ string_constant [ 'name' string_constant | '
 
 asm_block ::= 'assembler' ';' { declaration_part } // TODO  asm_statement
 
+#ifdef _have_pseudo_keyords_
 modifiers ::= ';' modifier { \LL:2\ ';' modifier }
 modifier ::= 
 	'public' [ 'name' string_constant ]
@@ -342,9 +388,11 @@ modifier ::=
 	| 'noreturn'
 	| 'iocheck'
 	| call_modifiers2
-call_modifiers2 ::= 'cdecl' | 'cppdecl' | 'hardfloat' | inline | 'local' | 'mwpascal' | 'ms_abi_default' | 'ms_abi_cdecl'
+call_modifiers2 ::= inline
+                                 | 'cdecl' | 'cppdecl' | 'hardfloat' | 'local' | 'mwpascal' | 'ms_abi_default' | 'ms_abi_cdecl'
 				| 'nostackframe' | 'overload' | 'pascal' | 'register'| 'safecall' | 'saveregisters' | 'softfloat'
 				| 'stdcall' | 'sysv_abi_default' | 'sysv_abi_cdecl' | 'vectorcall' | 'varargs'
+#endif
 
 operator_definition ::= operator ( assignment_operator_definition | arithmetic_operator_definition
 							| comparison_operator_definition | logical_operator_definition
@@ -354,7 +402,8 @@ assignment_operator_definition ::= ( ':=' | 'explicit' ) '(' value_parameter ')'
 arithmetic_operator_definition ::= ( '+' | '-' | '*' | '/' | '**' | '><' ) '(' parameter_list ')'
 comparison_operator_definition ::= ( '=' | '<' | '<=' | '>' | '>=' | '<>' | in ) '(' parameter_list ')'
 logical_operator_definition ::= ( and | or | xor | not ) '(' parameter_list ')'
-other_operator_definition ::= ( 'enumerator' | 'inc' | 'dec' ) '(' parameter_list ')'
+other_operator_definition ::= ( ident // ident instead of 'enumerator' | 'inc' | 'dec' 
+                                                        ) '(' parameter_list ')'
 
 raise_statement ::= raise [ exception_instance [ exception_address ] ]
 exception_address ::= 'at' address_expression { ',' address_expression }
@@ -366,7 +415,6 @@ exception_handler ::= on [ \LA: 2:':'\ identifier ':' ] type_name //  class_type
 					do statement 
 
 // Guessed from lang spec textual description (no syntax diagram available):
-constant ::= unsigned_number | string_constant
 string_literal ::= string_constant
 string_constant ::= character_string
 integer_constant ::= unsigned_integer
@@ -386,6 +434,7 @@ parameter_type ::= type_name
 //////
 
 // Guessed from existing fpc 3.2.2 source tree:
+constant ::= unsigned_number | string_constant | identifier
 base_helper ::= identifier
 string_constant_declaration ::= identifier '=' string_constant ';'
 address_expression ::= expression // results in CodePointer or Pointer
@@ -393,7 +442,7 @@ address_expression ::= expression // results in CodePointer or Pointer
 
 // TODO: 
 address_constant ::= 
-array_constant ::= 
+array_constant ::= '(' expression { ',' expression } ')'
 record_constant ::= 
 procedural_constant ::= 
 //////
@@ -407,7 +456,7 @@ unsigned_integer ::= decimal_int | hex_int | octal_int | binary_int
 character_string ::= ( quoted_string | control_string ) { quoted_string | control_string }
 control_string ::= '#' unsigned_integer
 
-selector ::= identifier { '.' identifier | '[' expression {',' expression} ']' }
+selector ::= identifier { '.' identifier | '[' expression {',' expression} ']' | '^' }
 
 // with this trick we can use the non-keywords as idents where possible
 identifier ::= ident
@@ -419,7 +468,7 @@ identifier ::= ident
 	| 'sealed' | 'published' | 'dynamic' | 'override' | 'message' | 'implements' | 'stored' 
 	| 'default' | 'generic' | 'specialize' | 'helper' | 'otherwise' | 'forward' | 'external' 
 	| 'assembler' | 'alias' | 'interrupt' | 'noreturn' | 'iocheck' | 'cdecl' | 'cppdecl' | 'hardfloat' 
-	| inline | 'local' | 'mwpascal' | 'ms_abi_default' | 'ms_abi_cdecl' | 'nostackframe' | 'overload' 
+	| 'local' | 'mwpascal' | 'ms_abi_default' | 'ms_abi_cdecl' | 'nostackframe' | 'overload' 
 	| 'pascal' | 'register'| 'safecall' | 'saveregisters' | 'softfloat' | 'stdcall' | 'sysv_abi_default' 
 	| 'sysv_abi_cdecl' | 'vectorcall' | 'varargs' | 'explicit' | 'enumerator' | 'inc' | 'dec' | 'at' 
 #endif

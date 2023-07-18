@@ -16,6 +16,7 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_address_factor: return "address_factor";
 		case R_adop: return "adop";
 		case R_arithmetic_operator_definition: return "arithmetic_operator_definition";
+		case R_array_constant: return "array_constant";
 		case R_array_type: return "array_type";
 		case R_asm_block: return "asm_block";
 		case R_asm_statement: return "asm_statement";
@@ -129,6 +130,7 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_method_directives2: return "method_directives2";
 		case R_modifier: return "modifier";
 		case R_modifiers: return "modifiers";
+		case R_modifiers_hintdirectives: return "modifiers_hintdirectives";
 		case R_mulop: return "mulop";
 		case R_object_type: return "object_type";
 		case R_object_visibility_specifier: return "object_visibility_specifier";

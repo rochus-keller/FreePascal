@@ -5,6 +5,8 @@
 
 #include <QByteArray>
 
+#define FP__HAVE_PSEUDO_KEYORDS_
+
 namespace Fp {
 	enum TokenType {
 		Tok_Invalid = 0,
@@ -64,7 +66,6 @@ namespace Fp {
 		Tok_constructor,
 		Tok_cppdecl,
 		Tok_cvar,
-		Tok_dec,
 		Tok_default,
 		Tok_deprecated,
 		Tok_destructor,
@@ -74,7 +75,6 @@ namespace Fp {
 		Tok_dynamic,
 		Tok_else,
 		Tok_end,
-		Tok_enumerator,
 		Tok_except,
 		Tok_experimental,
 		Tok_explicit,
@@ -95,7 +95,6 @@ namespace Fp {
 		Tok_implementation,
 		Tok_implements,
 		Tok_in,
-		Tok_inc,
 		Tok_index,
 		Tok_inherited,
 		Tok_initialization,
@@ -180,7 +179,6 @@ namespace Fp {
 
 		TT_Specials,
 		Tok_address_constant,
-		Tok_array_constant,
 		Tok_record_constant,
 		Tok_procedural_constant,
 		Tok_ident,

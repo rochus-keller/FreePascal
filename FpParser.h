@@ -183,6 +183,7 @@ namespace Fp {
 		void subroutine_block(SynTree*);
 		void function_declaration(SynTree*);
 		void function_header(SynTree*);
+		void modifiers_hintdirectives(SynTree*);
 		void formal_parameter_list(SynTree*);
 		void parameter_declaration(SynTree*);
 		void value_parameter(SynTree*);
@@ -205,7 +206,6 @@ namespace Fp {
 		void try_statement(SynTree*);
 		void exceptionhandlers(SynTree*);
 		void exception_handler(SynTree*);
-		void constant(SynTree*);
 		void string_literal(SynTree*);
 		void string_constant(SynTree*);
 		void integer_constant(SynTree*);
@@ -218,9 +218,11 @@ namespace Fp {
 		void parameter_list(SynTree*);
 		void default_parameter_value(SynTree*);
 		void parameter_type(SynTree*);
+		void constant(SynTree*);
 		void base_helper(SynTree*);
 		void string_constant_declaration(SynTree*);
 		void address_expression(SynTree*);
+		void array_constant(SynTree*);
 		void label_def(SynTree*);
 		void unsigned_number(SynTree*);
 		void unsigned_integer(SynTree*);

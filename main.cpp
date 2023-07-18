@@ -30,8 +30,10 @@ QStringList collectFiles( const QDir& dir, const QStringList& suffix )
     QStringList res;
     QStringList files = dir.entryList( QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name );
 
+#if 0
     foreach( const QString& f, files )
         res += collectFiles( QDir( dir.absoluteFilePath(f) ), suffix );
+#endif
 
     files = dir.entryList( suffix, QDir::Files, QDir::Name );
     foreach( const QString& f, files )
@@ -159,6 +161,7 @@ static void checkParser(const QStringList& files)
         {
             foreach( const Parser::Error& e, p.errors )
                 qCritical() << e.path.mid(root.size()+1) << e.row << e.col << e.msg;
+            break;
         }else
         {
             ok++;
