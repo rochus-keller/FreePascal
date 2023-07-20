@@ -20,6 +20,7 @@
 #include <QtDebug>
 #include <QFileInfo>
 #include <QDir>
+#include <QElapsedTimer>
 #include "FpLexer.h"
 #include "FpPpLexer.h"
 #include "FpParser.h"
@@ -149,6 +150,8 @@ static void checkParser(const QStringList& files)
         }
     };
 
+    QElapsedTimer timer;
+    timer.start();
     foreach( const QString& file, files )
     {
         Lex lex;
@@ -174,7 +177,7 @@ static void checkParser(const QStringList& files)
         dump(s,&p.d_root,0);
 #endif
     }
-    qDebug() << "#### finished with" << ok << "files ok of total" << files.size() << "files";
+    qDebug() << "#### finished with" << ok << "files ok of total" << files.size() << "files" << "in" << timer.elapsed() << " [ms]";
 }
 
 int main(int argc, char *argv[])

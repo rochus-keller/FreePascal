@@ -6,4 +6,6 @@ The given syntax is gradually migrated to an LL(1) compatible grammar using [Ebn
 
 The lexer was adapted/extended from the LisaPascal project and successfully tested with the FPC 3.2.2 source tree (even detected issues in the FPC source code). The preprocessor works as far as required by the FP compiler source code.
 
+The parser is automatically generated using the new EbnfStudio C++ generator and pseudo keyword features; so far 444 of the 669 pas and pp files, i.e. 66% of the FP 3.2.2 compiler source code can be successfully parsed in 3.9 seconds on my EliteBook.
+
 This is work in progress.
