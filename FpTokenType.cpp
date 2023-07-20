@@ -57,6 +57,7 @@ namespace Fp {
 			case Tok_constructor: return "constructor";
 			case Tok_cppdecl: return "cppdecl";
 			case Tok_cvar: return "cvar";
+			case Tok_dec: return "dec";
 			case Tok_default: return "default";
 			case Tok_deprecated: return "deprecated";
 			case Tok_destructor: return "destructor";
@@ -66,6 +67,7 @@ namespace Fp {
 			case Tok_dynamic: return "dynamic";
 			case Tok_else: return "else";
 			case Tok_end: return "end";
+			case Tok_enumerator: return "enumerator";
 			case Tok_except: return "except";
 			case Tok_experimental: return "experimental";
 			case Tok_explicit: return "explicit";
@@ -86,6 +88,7 @@ namespace Fp {
 			case Tok_implementation: return "implementation";
 			case Tok_implements: return "implements";
 			case Tok_in: return "in";
+			case Tok_inc: return "inc";
 			case Tok_index: return "index";
 			case Tok_inherited: return "inherited";
 			case Tok_initialization: return "initialization";
@@ -167,7 +170,6 @@ namespace Fp {
 			case Tok_with: return "with";
 			case Tok_write: return "write";
 			case Tok_xor: return "xor";
-			case Tok_address_constant: return "address_constant";
 			case Tok_record_constant: return "record_constant";
 			case Tok_procedural_constant: return "procedural_constant";
 			case Tok_ident: return "ident";
@@ -238,6 +240,7 @@ namespace Fp {
 			case Tok_constructor: return "Tok_constructor";
 			case Tok_cppdecl: return "Tok_cppdecl";
 			case Tok_cvar: return "Tok_cvar";
+			case Tok_dec: return "Tok_dec";
 			case Tok_default: return "Tok_default";
 			case Tok_deprecated: return "Tok_deprecated";
 			case Tok_destructor: return "Tok_destructor";
@@ -247,6 +250,7 @@ namespace Fp {
 			case Tok_dynamic: return "Tok_dynamic";
 			case Tok_else: return "Tok_else";
 			case Tok_end: return "Tok_end";
+			case Tok_enumerator: return "Tok_enumerator";
 			case Tok_except: return "Tok_except";
 			case Tok_experimental: return "Tok_experimental";
 			case Tok_explicit: return "Tok_explicit";
@@ -267,6 +271,7 @@ namespace Fp {
 			case Tok_implementation: return "Tok_implementation";
 			case Tok_implements: return "Tok_implements";
 			case Tok_in: return "Tok_in";
+			case Tok_inc: return "Tok_inc";
 			case Tok_index: return "Tok_index";
 			case Tok_inherited: return "Tok_inherited";
 			case Tok_initialization: return "Tok_initialization";
@@ -348,7 +353,6 @@ namespace Fp {
 			case Tok_with: return "Tok_with";
 			case Tok_write: return "Tok_write";
 			case Tok_xor: return "Tok_xor";
-			case Tok_address_constant: return "Tok_address_constant";
 			case Tok_record_constant: return "Tok_record_constant";
 			case Tok_procedural_constant: return "Tok_procedural_constant";
 			case Tok_ident: return "Tok_ident";
@@ -699,6 +703,9 @@ namespace Fp {
 			switch( at(str,i+1) ){
 			case 'e':
 				switch( at(str,i+2) ){
+				case 'c':
+					res = Tok_dec; i += 3;
+					break;
 				case 'f':
 					if( at(str,i+3) == 'a' ){
 						if( at(str,i+4) == 'u' ){
@@ -789,8 +796,27 @@ namespace Fp {
 				}
 				break;
 			case 'n':
-				if( at(str,i+2) == 'd' ){
+				switch( at(str,i+2) ){
+				case 'd':
 					res = Tok_end; i += 3;
+					break;
+				case 'u':
+					if( at(str,i+3) == 'm' ){
+						if( at(str,i+4) == 'e' ){
+							if( at(str,i+5) == 'r' ){
+								if( at(str,i+6) == 'a' ){
+									if( at(str,i+7) == 't' ){
+										if( at(str,i+8) == 'o' ){
+											if( at(str,i+9) == 'r' ){
+												res = Tok_enumerator; i += 10;
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+					break;
 				}
 				break;
 			case 'x':
@@ -1032,6 +1058,9 @@ namespace Fp {
 				break;
 			case 'n':
 				switch( at(str,i+2) ){
+				case 'c':
+					res = Tok_inc; i += 3;
+					break;
 				case 'd':
 					if( at(str,i+3) == 'e' ){
 						if( at(str,i+4) == 'x' ){

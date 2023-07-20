@@ -12,6 +12,7 @@ const char* SynTree::rToStr( quint16 r ) {
 	switch(r) {
 		case R_FreePascal: return "FreePascal";
 		case R_actual_parameter_list: return "actual_parameter_list";
+		case R_address_constant: return "address_constant";
 		case R_address_expression: return "address_expression";
 		case R_address_factor: return "address_factor";
 		case R_adop: return "adop";
@@ -29,7 +30,6 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_base_helper: return "base_helper";
 		case R_block: return "block";
 		case R_call_modifiers: return "call_modifiers";
-		case R_call_modifiers2: return "call_modifiers2";
 		case R_case_part: return "case_part";
 		case R_case_range: return "case_range";
 		case R_case_statement: return "case_statement";
@@ -60,6 +60,7 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_default_parameter_value: return "default_parameter_value";
 		case R_default_specifier: return "default_specifier";
 		case R_defaultarraypropertyspecifier: return "defaultarraypropertyspecifier";
+		case R_designator: return "designator";
 		case R_destructor_declaration: return "destructor_declaration";
 		case R_destructor_header: return "destructor_header";
 		case R_else_part: return "else_part";
@@ -130,7 +131,6 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_method_directives2: return "method_directives2";
 		case R_modifier: return "modifier";
 		case R_modifiers: return "modifiers";
-		case R_modifiers_hintdirectives: return "modifiers_hintdirectives";
 		case R_mulop: return "mulop";
 		case R_object_type: return "object_type";
 		case R_object_visibility_specifier: return "object_visibility_specifier";
@@ -160,6 +160,7 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_property_parameter_list: return "property_parameter_list";
 		case R_property_specifiers: return "property_specifiers";
 		case R_property_specifiers2: return "property_specifiers2";
+		case R_pseudo_keywords_: return "pseudo_keywords";
 		case R_qualified_method_identifier_: return "qualified_method_identifier";
 		case R_raise_statement: return "raise_statement";
 		case R_read_specifier: return "read_specifier";

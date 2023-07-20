@@ -183,7 +183,6 @@ namespace Fp {
 		void subroutine_block(SynTree*);
 		void function_declaration(SynTree*);
 		void function_header(SynTree*);
-		void modifiers_hintdirectives(SynTree*);
 		void formal_parameter_list(SynTree*);
 		void parameter_declaration(SynTree*);
 		void value_parameter(SynTree*);
@@ -194,7 +193,6 @@ namespace Fp {
 		void asm_block(SynTree*);
 		void modifiers(SynTree*);
 		void modifier(SynTree*);
-		void call_modifiers2(SynTree*);
 		void operator_definition(SynTree*);
 		void assignment_operator_definition(SynTree*);
 		void arithmetic_operator_definition(SynTree*);
@@ -222,6 +220,7 @@ namespace Fp {
 		void base_helper(SynTree*);
 		void string_constant_declaration(SynTree*);
 		void address_expression(SynTree*);
+		void address_constant(SynTree*);
 		void array_constant(SynTree*);
 		void label_def(SynTree*);
 		void unsigned_number(SynTree*);
@@ -229,15 +228,16 @@ namespace Fp {
 		void character_string(SynTree*);
 		void control_string(SynTree*);
 		void selector(SynTree*);
+		void designator(SynTree*);
 		void identifier(SynTree*);
 	protected:
 		Token cur;
 		Token la;
 		Scanner* scanner;
 		void next();
-		int peek(int off);
+		Token peek(int off);
 		void invalid(const char* what);
-		void expect(int tt, const char* where);
+		void expect(int tt, bool pkw, const char* where);
 	};
 }
 #endif // include

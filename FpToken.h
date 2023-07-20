@@ -32,8 +32,14 @@ namespace Fp
 		    int d_type; // TokenType
             TokenType d_tokenType;
         };
+        union
+        {
+            int d_code; // TokenType, the pseudo keyword which an ident represents, or invalid
+            TokenType d_codeType;
+        };
 #else
         quint8 d_type; // TokenType
+        quint8 d_code; // TokenType, signifies a pseudo keyword
 #endif
         quint8 d_len;
         quint32 d_lineNr : RowCol::ROW_BIT_LEN;
@@ -43,7 +49,7 @@ namespace Fp
         QByteArray d_val;
         const char* d_id; // lower-case internalized version of d_val
         Token(quint16 t = Tok_Invalid, quint32 line = 0, quint16 col = 0, const QByteArray& val = QByteArray()):
-            d_type(t), d_lineNr(line),d_colNr(col),d_val(val),d_len(0),d_id(0){}
+            d_type(t), d_lineNr(line),d_colNr(col),d_val(val),d_len(0),d_id(0),d_code(0){}
         bool isValid() const { return d_type != Tok_Eof && d_type != Tok_Invalid; }
         bool isEof() const { return d_type == Tok_Eof; }
         RowCol toLoc() const { return RowCol(d_lineNr,d_colNr); }

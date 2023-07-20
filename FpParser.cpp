@@ -3,7 +3,7 @@
 using namespace Fp;
 
 static inline bool FIRST_FreePascal(int tt) {
-	return tt == Tok_program || tt == Tok_library || tt == Tok_unit;
+	return tt == Tok_unit || tt == Tok_program || tt == Tok_library;
 }
 
 static inline bool FIRST_program_(int tt) {
@@ -76,18 +76,19 @@ static inline bool FIRST_exports_entry(int tt) {
 
 static inline bool FIRST_block(int tt) {
 	switch(tt){
-	case Tok_const:
 	case Tok_procedure:
 	case Tok_type:
-	case Tok_constructor:
 	case Tok_begin:
-	case Tok_label:
 	case Tok_function:
-	case Tok_resourcestring:
+	case Tok_constructor:
 	case Tok_var:
-	case Tok_destructor:
 	case Tok_threadvar:
+	case Tok_class:
+	case Tok_label:
 	case Tok_exports:
+	case Tok_resourcestring:
+	case Tok_destructor:
+	case Tok_const:
 		return true;
 	default: return false;
 	}
@@ -95,17 +96,18 @@ static inline bool FIRST_block(int tt) {
 
 static inline bool FIRST_declaration_part(int tt) {
 	switch(tt){
-	case Tok_const:
 	case Tok_procedure:
 	case Tok_type:
-	case Tok_constructor:
-	case Tok_label:
 	case Tok_function:
-	case Tok_resourcestring:
+	case Tok_constructor:
 	case Tok_var:
-	case Tok_destructor:
 	case Tok_threadvar:
+	case Tok_class:
+	case Tok_label:
 	case Tok_exports:
+	case Tok_resourcestring:
+	case Tok_destructor:
+	case Tok_const:
 		return true;
 	default: return false;
 	}
@@ -136,7 +138,7 @@ static inline bool FIRST_threadvariable_declaration_part(int tt) {
 }
 
 static inline bool FIRST_func_proc_declaration_part(int tt) {
-	return tt == Tok_procedure || tt == Tok_constructor || tt == Tok_function || tt == Tok_destructor;
+	return tt == Tok_procedure || tt == Tok_function || tt == Tok_constructor || tt == Tok_destructor;
 }
 
 static inline bool FIRST_statement_part(int tt) {
@@ -144,11 +146,11 @@ static inline bool FIRST_statement_part(int tt) {
 }
 
 static inline bool FIRST_hint_directive(int tt) {
-	return tt == Tok_deprecated || tt == Tok_experimental || tt == Tok_platform || tt == Tok_unimplemented;
+	return tt == Tok_platform || tt == Tok_unimplemented || tt == Tok_experimental || tt == Tok_deprecated;
 }
 
 static inline bool FIRST_hintdirectives(int tt) {
-	return tt == Tok_deprecated || tt == Tok_experimental || tt == Tok_platform || tt == Tok_unimplemented;
+	return tt == Tok_platform || tt == Tok_unimplemented || tt == Tok_experimental || tt == Tok_deprecated;
 }
 
 static inline bool FIRST_constant_declaration(int tt) {
@@ -157,18 +159,18 @@ static inline bool FIRST_constant_declaration(int tt) {
 
 static inline bool FIRST_typed_constant(int tt) {
 	switch(tt){
-	case Tok_octal_int:
+	case Tok_Lpar:
 	case Tok_unsigned_real:
-	case Tok_quoted_string:
-	case Tok_ident:
+	case Tok_At:
+	case Tok_record_constant:
+	case Tok_decimal_int:
 	case Tok_Hash:
 	case Tok_binary_int:
-	case Tok_procedural_constant:
-	case Tok_decimal_int:
+	case Tok_octal_int:
+	case Tok_quoted_string:
 	case Tok_hex_int:
-	case Tok_record_constant:
-	case Tok_Lpar:
-	case Tok_address_constant:
+	case Tok_procedural_constant:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
@@ -180,32 +182,39 @@ static inline bool FIRST_type_declaration(int tt) {
 
 static inline bool FIRST_type_(int tt) {
 	switch(tt){
-	case Tok_function:
-	case Tok_unsigned_real:
-	case Tok_record:
-	case Tok_procedure:
-	case Tok_set:
-	case Tok_packed:
-	case Tok_array:
-	case Tok_decimal_int:
-	case Tok_generic:
-	case Tok_ident:
-	case Tok_binary_int:
+	case Tok_nil:
+	case Tok_inherited:
 	case Tok_hex_int:
-	case Tok_quoted_string:
-	case Tok_type:
-	case Tok_class:
-	case Tok_octal_int:
-	case Tok_string:
-	case Tok_object:
-	case Tok_Hash:
-	case Tok_specialize:
-	case Tok_Hat:
-	case Tok_Lpar:
-	case Tok_file:
+	case Tok_At:
+	case Tok_array:
+	case Tok_Lbrack:
 	case Tok_interface:
+	case Tok_file:
+	case Tok_octal_int:
+	case Tok_not:
+	case Tok_binary_int:
+	case Tok_generic:
+	case Tok_string:
+	case Tok_Plus:
+	case Tok_type:
+	case Tok_object:
+	case Tok_record:
+	case Tok_Hash:
+	case Tok_Hat:
+	case Tok_procedure:
+	case Tok_quoted_string:
+	case Tok_unsigned_real:
+	case Tok_decimal_int:
+	case Tok_packed:
+	case Tok_Minus:
+	case Tok_specialize:
 	case Tok_bitpacked:
+	case Tok_function:
 	case Tok_ansistring:
+	case Tok_class:
+	case Tok_set:
+	case Tok_ident:
+	case Tok_Lpar:
 		return true;
 	default: return false;
 	}
@@ -213,16 +222,23 @@ static inline bool FIRST_type_(int tt) {
 
 static inline bool FIRST_simple_type(int tt) {
 	switch(tt){
-	case Tok_octal_int:
-	case Tok_unsigned_real:
-	case Tok_string:
-	case Tok_quoted_string:
-	case Tok_ident:
-	case Tok_Hash:
-	case Tok_binary_int:
-	case Tok_ansistring:
-	case Tok_decimal_int:
+	case Tok_nil:
+	case Tok_inherited:
+	case Tok_At:
 	case Tok_hex_int:
+	case Tok_Lbrack:
+	case Tok_octal_int:
+	case Tok_not:
+	case Tok_binary_int:
+	case Tok_string:
+	case Tok_Plus:
+	case Tok_Hash:
+	case Tok_quoted_string:
+	case Tok_unsigned_real:
+	case Tok_decimal_int:
+	case Tok_Minus:
+	case Tok_ansistring:
+	case Tok_ident:
 	case Tok_Lpar:
 		return true;
 	default: return false;
@@ -230,39 +246,54 @@ static inline bool FIRST_simple_type(int tt) {
 }
 
 static inline bool FIRST_type_name(int tt) {
-	return tt == Tok_ident;
+	return tt == Tok_string || tt == Tok_ident;
 }
 
 static inline bool FIRST_subrange_type(int tt) {
 	switch(tt){
-	case Tok_octal_int:
+	case Tok_Plus:
+	case Tok_Lpar:
 	case Tok_unsigned_real:
-	case Tok_quoted_string:
-	case Tok_ident:
+	case Tok_At:
+	case Tok_decimal_int:
+	case Tok_not:
+	case Tok_inherited:
+	case Tok_Lbrack:
 	case Tok_Hash:
 	case Tok_binary_int:
-	case Tok_decimal_int:
+	case Tok_octal_int:
+	case Tok_nil:
+	case Tok_quoted_string:
 	case Tok_hex_int:
+	case Tok_Minus:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
 }
 
 static inline bool FIRST_string_type(int tt) {
-	return tt == Tok_string || tt == Tok_ansistring;
+	return tt == Tok_ansistring || tt == Tok_string;
 }
 
 static inline bool FIRST_ordinal_type(int tt) {
 	switch(tt){
-	case Tok_octal_int:
+	case Tok_Plus:
+	case Tok_Lpar:
 	case Tok_unsigned_real:
-	case Tok_quoted_string:
-	case Tok_ident:
+	case Tok_At:
+	case Tok_decimal_int:
+	case Tok_not:
+	case Tok_inherited:
+	case Tok_Lbrack:
 	case Tok_Hash:
 	case Tok_binary_int:
-	case Tok_decimal_int:
+	case Tok_octal_int:
+	case Tok_nil:
+	case Tok_quoted_string:
 	case Tok_hex_int:
-	case Tok_Lpar:
+	case Tok_Minus:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
@@ -290,13 +321,13 @@ static inline bool FIRST_assigned_enum_(int tt) {
 
 static inline bool FIRST_structured_type(int tt) {
 	switch(tt){
-	case Tok_bitpacked:
 	case Tok_file:
-	case Tok_array:
+	case Tok_set:
+	case Tok_bitpacked:
 	case Tok_object:
 	case Tok_interface:
-	case Tok_set:
 	case Tok_packed:
+	case Tok_array:
 	case Tok_record:
 	case Tok_class:
 		return true;
@@ -307,9 +338,9 @@ static inline bool FIRST_structured_type(int tt) {
 static inline bool FIRST_packable_type_(int tt) {
 	switch(tt){
 	case Tok_bitpacked:
-	case Tok_array:
 	case Tok_object:
 	case Tok_packed:
+	case Tok_array:
 	case Tok_record:
 	case Tok_class:
 		return true;
@@ -322,7 +353,7 @@ static inline bool FIRST_array_type(int tt) {
 }
 
 static inline bool FIRST_field_list(int tt) {
-	return tt == Tok_ident || tt == Tok_Semi || tt == Tok_case;
+	return tt == Tok_Semi || tt == Tok_case || tt == Tok_ident;
 }
 
 static inline bool FIRST_variant_part(int tt) {
@@ -331,14 +362,14 @@ static inline bool FIRST_variant_part(int tt) {
 
 static inline bool FIRST_variant(int tt) {
 	switch(tt){
-	case Tok_octal_int:
 	case Tok_unsigned_real:
-	case Tok_quoted_string:
-	case Tok_ident:
+	case Tok_decimal_int:
 	case Tok_Hash:
 	case Tok_binary_int:
-	case Tok_decimal_int:
+	case Tok_octal_int:
+	case Tok_quoted_string:
 	case Tok_hex_int:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
@@ -358,22 +389,20 @@ static inline bool FIRST_record_type(int tt) {
 
 static inline bool FIRST_component_list3(int tt) {
 	switch(tt){
-	case Tok_ident:
-	case Tok_Semi:
-	case Tok_public:
-	case Tok_case:
 	case Tok_procedure:
-	case Tok_private:
-	case Tok_function:
-	case Tok_class:
 	case Tok_strict:
+	case Tok_function:
+	case Tok_public:
+	case Tok_private:
+	case Tok_class:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
 }
 
 static inline bool FIRST_record_visibility_specifier(int tt) {
-	return tt == Tok_public || tt == Tok_private || tt == Tok_strict;
+	return tt == Tok_strict || tt == Tok_public || tt == Tok_private;
 }
 
 static inline bool FIRST_record_method_definition(int tt) {
@@ -406,12 +435,12 @@ static inline bool FIRST_func_proc_header(int tt) {
 
 static inline bool FIRST_call_modifiers(int tt) {
 	switch(tt){
-	case Tok_stdcall:
 	case Tok_pascal:
 	case Tok_inline:
-	case Tok_safecall:
-	case Tok_register:
+	case Tok_stdcall:
 	case Tok_cdecl:
+	case Tok_register:
+	case Tok_safecall:
 		return true;
 	default: return false;
 	}
@@ -442,7 +471,7 @@ static inline bool FIRST_property_parameter_list(int tt) {
 }
 
 static inline bool FIRST_property_specifiers(int tt) {
-	return tt == Tok_write || tt == Tok_read || tt == Tok_nodefault || tt == Tok_default;
+	return tt == Tok_write || tt == Tok_read || tt == Tok_default || tt == Tok_nodefault;
 }
 
 static inline bool FIRST_read_specifier(int tt) {
@@ -454,7 +483,7 @@ static inline bool FIRST_write_specifier(int tt) {
 }
 
 static inline bool FIRST_default_specifier(int tt) {
-	return tt == Tok_nodefault || tt == Tok_default;
+	return tt == Tok_default || tt == Tok_nodefault;
 }
 
 static inline bool FIRST_field_or_function(int tt) {
@@ -475,24 +504,24 @@ static inline bool FIRST_heritage(int tt) {
 
 static inline bool FIRST_component_list(int tt) {
 	switch(tt){
-	case Tok_const:
-	case Tok_ident:
-	case Tok_public:
 	case Tok_procedure:
-	case Tok_constructor:
-	case Tok_protected:
-	case Tok_private:
 	case Tok_function:
-	case Tok_destructor:
+	case Tok_constructor:
+	case Tok_public:
+	case Tok_private:
+	case Tok_protected:
 	case Tok_var:
 	case Tok_class:
+	case Tok_ident:
+	case Tok_destructor:
+	case Tok_const:
 		return true;
 	default: return false;
 	}
 }
 
 static inline bool FIRST_field_definition(int tt) {
-	return tt == Tok_ident || tt == Tok_var || tt == Tok_class;
+	return tt == Tok_var || tt == Tok_class || tt == Tok_ident;
 }
 
 static inline bool FIRST_const_definition(int tt) {
@@ -500,7 +529,7 @@ static inline bool FIRST_const_definition(int tt) {
 }
 
 static inline bool FIRST_object_visibility_specifier(int tt) {
-	return tt == Tok_public || tt == Tok_protected || tt == Tok_private;
+	return tt == Tok_public || tt == Tok_private || tt == Tok_protected;
 }
 
 static inline bool FIRST_constructor_declaration(int tt) {
@@ -520,18 +549,18 @@ static inline bool FIRST_destructor_header(int tt) {
 }
 
 static inline bool FIRST_method_definition(int tt) {
-	return tt == Tok_procedure || tt == Tok_constructor || tt == Tok_function || tt == Tok_destructor || tt == Tok_class;
+	return tt == Tok_procedure || tt == Tok_function || tt == Tok_constructor || tt == Tok_class || tt == Tok_destructor;
 }
 
 static inline bool FIRST_method_directives(int tt) {
 	switch(tt){
-	case Tok_stdcall:
 	case Tok_pascal:
 	case Tok_inline:
-	case Tok_safecall:
-	case Tok_register:
+	case Tok_stdcall:
 	case Tok_cdecl:
 	case Tok_virtual:
+	case Tok_register:
+	case Tok_safecall:
 		return true;
 	default: return false;
 	}
@@ -551,21 +580,21 @@ static inline bool FIRST_implemented_interfaces(int tt) {
 
 static inline bool FIRST_component_list2(int tt) {
 	switch(tt){
-	case Tok_const:
-	case Tok_ident:
-	case Tok_published:
-	case Tok_public:
+	case Tok_strict:
 	case Tok_procedure:
 	case Tok_type:
+	case Tok_published:
+	case Tok_function:
+	case Tok_public:
 	case Tok_constructor:
 	case Tok_protected:
-	case Tok_property:
 	case Tok_private:
-	case Tok_function:
 	case Tok_var:
-	case Tok_destructor:
 	case Tok_class:
-	case Tok_strict:
+	case Tok_property:
+	case Tok_ident:
+	case Tok_destructor:
+	case Tok_const:
 		return true;
 	default: return false;
 	}
@@ -573,30 +602,30 @@ static inline bool FIRST_component_list2(int tt) {
 
 static inline bool FIRST_class_part(int tt) {
 	switch(tt){
-	case Tok_const:
 	case Tok_procedure:
 	case Tok_type:
-	case Tok_constructor:
-	case Tok_property:
 	case Tok_function:
+	case Tok_constructor:
 	case Tok_var:
-	case Tok_destructor:
 	case Tok_class:
+	case Tok_property:
+	case Tok_destructor:
+	case Tok_const:
 		return true;
 	default: return false;
 	}
 }
 
 static inline bool FIRST_class_visibility_specifier(int tt) {
-	return tt == Tok_published || tt == Tok_public || tt == Tok_protected || tt == Tok_private || tt == Tok_strict;
+	return tt == Tok_strict || tt == Tok_published || tt == Tok_public || tt == Tok_protected || tt == Tok_private;
 }
 
 static inline bool FIRST_method_definition2(int tt) {
-	return tt == Tok_procedure || tt == Tok_constructor || tt == Tok_function || tt == Tok_destructor;
+	return tt == Tok_procedure || tt == Tok_function || tt == Tok_constructor || tt == Tok_destructor;
 }
 
 static inline bool FIRST_method_directives2(int tt) {
-	return tt == Tok_dynamic || tt == Tok_reintroduce || tt == Tok_message || tt == Tok_override || tt == Tok_virtual;
+	return tt == Tok_reintroduce || tt == Tok_message || tt == Tok_virtual || tt == Tok_override || tt == Tok_dynamic;
 }
 
 static inline bool FIRST_field_definition2(int tt) {
@@ -610,12 +639,12 @@ static inline bool FIRST_property_definition2(int tt) {
 static inline bool FIRST_property_specifiers2(int tt) {
 	switch(tt){
 	case Tok_write:
+	case Tok_implements:
 	case Tok_read:
+	case Tok_default:
 	case Tok_Semi:
 	case Tok_nodefault:
 	case Tok_stored:
-	case Tok_implements:
-	case Tok_default:
 		return true;
 	default: return false;
 	}
@@ -659,11 +688,11 @@ static inline bool FIRST_identifier_list2(int tt) {
 
 static inline bool FIRST_generic_type_(int tt) {
 	switch(tt){
-	case Tok_array:
 	case Tok_object:
 	case Tok_procedure:
-	case Tok_interface:
 	case Tok_function:
+	case Tok_interface:
+	case Tok_array:
 	case Tok_record:
 	case Tok_class:
 		return true;
@@ -676,7 +705,7 @@ static inline bool FIRST_specialized_type(int tt) {
 }
 
 static inline bool FIRST_type_name_list(int tt) {
-	return tt == Tok_ident;
+	return tt == Tok_string || tt == Tok_ident;
 }
 
 static inline bool FIRST_helper_type(int tt) {
@@ -685,12 +714,12 @@ static inline bool FIRST_helper_type(int tt) {
 
 static inline bool FIRST_helper_component_list(int tt) {
 	switch(tt){
-	case Tok_ident:
 	case Tok_procedure:
-	case Tok_constructor:
 	case Tok_function:
-	case Tok_destructor:
+	case Tok_constructor:
 	case Tok_class:
+	case Tok_destructor:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
@@ -698,22 +727,22 @@ static inline bool FIRST_helper_component_list(int tt) {
 
 static inline bool FIRST_expression(int tt) {
 	switch(tt){
-	case Tok_octal_int:
 	case Tok_Plus:
+	case Tok_Lpar:
 	case Tok_unsigned_real:
-	case Tok_quoted_string:
+	case Tok_At:
+	case Tok_decimal_int:
+	case Tok_not:
 	case Tok_inherited:
-	case Tok_ident:
-	case Tok_Minus:
+	case Tok_Lbrack:
 	case Tok_Hash:
 	case Tok_binary_int:
-	case Tok_decimal_int:
-	case Tok_At:
-	case Tok_hex_int:
+	case Tok_octal_int:
+	case Tok_quoted_string:
 	case Tok_nil:
-	case Tok_Lpar:
-	case Tok_not:
-	case Tok_Lbrack:
+	case Tok_hex_int:
+	case Tok_Minus:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
@@ -722,13 +751,13 @@ static inline bool FIRST_expression(int tt) {
 static inline bool FIRST_relop(int tt) {
 	switch(tt){
 	case Tok_Geq:
-	case Tok_Lt:
-	case Tok_LtGt:
-	case Tok_in:
-	case Tok_Eq:
 	case Tok_Gt:
-	case Tok_is:
+	case Tok_in:
+	case Tok_LtGt:
 	case Tok_Leq:
+	case Tok_Eq:
+	case Tok_is:
+	case Tok_Lt:
 		return true;
 	default: return false;
 	}
@@ -736,22 +765,22 @@ static inline bool FIRST_relop(int tt) {
 
 static inline bool FIRST_simple_expression(int tt) {
 	switch(tt){
-	case Tok_octal_int:
 	case Tok_Plus:
-	case Tok_unsigned_real:
-	case Tok_quoted_string:
-	case Tok_ident:
-	case Tok_inherited:
-	case Tok_Hash:
-	case Tok_Minus:
-	case Tok_binary_int:
-	case Tok_decimal_int:
-	case Tok_At:
-	case Tok_hex_int:
-	case Tok_nil:
 	case Tok_Lpar:
+	case Tok_unsigned_real:
+	case Tok_At:
+	case Tok_decimal_int:
 	case Tok_not:
+	case Tok_inherited:
 	case Tok_Lbrack:
+	case Tok_Hash:
+	case Tok_binary_int:
+	case Tok_octal_int:
+	case Tok_nil:
+	case Tok_quoted_string:
+	case Tok_hex_int:
+	case Tok_Minus:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
@@ -763,22 +792,22 @@ static inline bool FIRST_adop(int tt) {
 
 static inline bool FIRST_term(int tt) {
 	switch(tt){
-	case Tok_octal_int:
 	case Tok_Plus:
+	case Tok_Lpar:
 	case Tok_unsigned_real:
-	case Tok_quoted_string:
+	case Tok_At:
+	case Tok_decimal_int:
+	case Tok_not:
 	case Tok_inherited:
-	case Tok_ident:
-	case Tok_Minus:
+	case Tok_Lbrack:
 	case Tok_Hash:
 	case Tok_binary_int:
-	case Tok_decimal_int:
-	case Tok_At:
-	case Tok_hex_int:
+	case Tok_octal_int:
+	case Tok_quoted_string:
 	case Tok_nil:
-	case Tok_Lpar:
-	case Tok_not:
-	case Tok_Lbrack:
+	case Tok_hex_int:
+	case Tok_Minus:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
@@ -786,12 +815,12 @@ static inline bool FIRST_term(int tt) {
 
 static inline bool FIRST_mulop(int tt) {
 	switch(tt){
-	case Tok_Slash:
-	case Tok_as:
 	case Tok_shl:
-	case Tok_mod:
-	case Tok_div:
 	case Tok_and:
+	case Tok_mod:
+	case Tok_as:
+	case Tok_Slash:
+	case Tok_div:
 	case Tok_shr:
 	case Tok_Star:
 		return true;
@@ -801,22 +830,22 @@ static inline bool FIRST_mulop(int tt) {
 
 static inline bool FIRST_factor(int tt) {
 	switch(tt){
-	case Tok_octal_int:
 	case Tok_Plus:
-	case Tok_unsigned_real:
-	case Tok_quoted_string:
-	case Tok_ident:
-	case Tok_inherited:
-	case Tok_Hash:
-	case Tok_Minus:
-	case Tok_binary_int:
-	case Tok_decimal_int:
-	case Tok_At:
-	case Tok_hex_int:
-	case Tok_nil:
 	case Tok_Lpar:
+	case Tok_unsigned_real:
+	case Tok_At:
+	case Tok_decimal_int:
 	case Tok_not:
+	case Tok_inherited:
 	case Tok_Lbrack:
+	case Tok_Hash:
+	case Tok_binary_int:
+	case Tok_octal_int:
+	case Tok_nil:
+	case Tok_quoted_string:
+	case Tok_hex_int:
+	case Tok_Minus:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
@@ -828,14 +857,14 @@ static inline bool FIRST_varref_or_funcall_or_constid_or_cast(int tt) {
 
 static inline bool FIRST_unsigned_constant(int tt) {
 	switch(tt){
-	case Tok_octal_int:
 	case Tok_unsigned_real:
-	case Tok_quoted_string:
+	case Tok_decimal_int:
 	case Tok_Hash:
 	case Tok_binary_int:
-	case Tok_decimal_int:
-	case Tok_hex_int:
+	case Tok_octal_int:
+	case Tok_quoted_string:
 	case Tok_nil:
+	case Tok_hex_int:
 		return true;
 	default: return false;
 	}
@@ -855,22 +884,22 @@ static inline bool FIRST_set_constructor(int tt) {
 
 static inline bool FIRST_set_group(int tt) {
 	switch(tt){
-	case Tok_octal_int:
 	case Tok_Plus:
-	case Tok_unsigned_real:
-	case Tok_quoted_string:
-	case Tok_ident:
-	case Tok_inherited:
-	case Tok_Hash:
-	case Tok_Minus:
-	case Tok_binary_int:
-	case Tok_decimal_int:
-	case Tok_At:
-	case Tok_hex_int:
-	case Tok_nil:
 	case Tok_Lpar:
+	case Tok_unsigned_real:
+	case Tok_At:
+	case Tok_decimal_int:
 	case Tok_not:
+	case Tok_inherited:
 	case Tok_Lbrack:
+	case Tok_Hash:
+	case Tok_binary_int:
+	case Tok_octal_int:
+	case Tok_nil:
+	case Tok_quoted_string:
+	case Tok_hex_int:
+	case Tok_Minus:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
@@ -882,22 +911,22 @@ static inline bool FIRST_address_factor(int tt) {
 
 static inline bool FIRST_constant_expression(int tt) {
 	switch(tt){
-	case Tok_octal_int:
 	case Tok_Plus:
+	case Tok_Lpar:
 	case Tok_unsigned_real:
-	case Tok_quoted_string:
+	case Tok_At:
+	case Tok_decimal_int:
+	case Tok_not:
 	case Tok_inherited:
-	case Tok_ident:
-	case Tok_Minus:
+	case Tok_Lbrack:
 	case Tok_Hash:
 	case Tok_binary_int:
-	case Tok_decimal_int:
-	case Tok_At:
-	case Tok_hex_int:
+	case Tok_octal_int:
+	case Tok_quoted_string:
 	case Tok_nil:
-	case Tok_Lpar:
-	case Tok_not:
-	case Tok_Lbrack:
+	case Tok_hex_int:
+	case Tok_Minus:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
@@ -905,27 +934,27 @@ static inline bool FIRST_constant_expression(int tt) {
 
 static inline bool FIRST_statement(int tt) {
 	switch(tt){
-	case Tok_goto:
 	case Tok_asm:
-	case Tok_while:
-	case Tok_try:
 	case Tok_with:
-	case Tok_ident:
-	case Tok_inherited:
-	case Tok_for:
-	case Tok_decimal_int:
-	case Tok_raise:
-	case Tok_case:
-	case Tok_begin:
-	case Tok_repeat:
 	case Tok_if:
+	case Tok_repeat:
+	case Tok_begin:
+	case Tok_decimal_int:
+	case Tok_try:
+	case Tok_while:
+	case Tok_inherited:
+	case Tok_raise:
+	case Tok_for:
+	case Tok_case:
+	case Tok_goto:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
 }
 
 static inline bool FIRST_simple_statement(int tt) {
-	return tt == Tok_goto || tt == Tok_inherited || tt == Tok_ident || tt == Tok_raise;
+	return tt == Tok_inherited || tt == Tok_raise || tt == Tok_goto || tt == Tok_ident;
 }
 
 static inline bool FIRST_assig_or_call(int tt) {
@@ -937,7 +966,7 @@ static inline bool FIRST_inherited_call(int tt) {
 }
 
 static inline bool FIRST_assigop(int tt) {
-	return tt == Tok_StarEq || tt == Tok_PlusEq || tt == Tok_ColonEq || tt == Tok_SlashEq || tt == Tok_MinusEq;
+	return tt == Tok_MinusEq || tt == Tok_ColonEq || tt == Tok_SlashEq || tt == Tok_PlusEq || tt == Tok_StarEq;
 }
 
 static inline bool FIRST_goto_statement(int tt) {
@@ -946,25 +975,25 @@ static inline bool FIRST_goto_statement(int tt) {
 
 static inline bool FIRST_structured_statement(int tt) {
 	switch(tt){
-	case Tok_while:
-	case Tok_try:
 	case Tok_with:
+	case Tok_if:
+	case Tok_repeat:
+	case Tok_begin:
+	case Tok_try:
+	case Tok_while:
 	case Tok_for:
 	case Tok_case:
-	case Tok_begin:
-	case Tok_repeat:
-	case Tok_if:
 		return true;
 	default: return false;
 	}
 }
 
 static inline bool FIRST_conditional_statement(int tt) {
-	return tt == Tok_case || tt == Tok_if;
+	return tt == Tok_if || tt == Tok_case;
 }
 
 static inline bool FIRST_repetitive_statement(int tt) {
-	return tt == Tok_while || tt == Tok_for || tt == Tok_repeat;
+	return tt == Tok_repeat || tt == Tok_while || tt == Tok_for;
 }
 
 static inline bool FIRST_compound_statement(int tt) {
@@ -973,21 +1002,21 @@ static inline bool FIRST_compound_statement(int tt) {
 
 static inline bool FIRST_statement_list(int tt) {
 	switch(tt){
-	case Tok_goto:
 	case Tok_asm:
-	case Tok_while:
-	case Tok_try:
 	case Tok_with:
-	case Tok_inherited:
-	case Tok_ident:
-	case Tok_Semi:
-	case Tok_for:
-	case Tok_decimal_int:
-	case Tok_raise:
-	case Tok_case:
-	case Tok_begin:
-	case Tok_repeat:
 	case Tok_if:
+	case Tok_repeat:
+	case Tok_begin:
+	case Tok_Semi:
+	case Tok_decimal_int:
+	case Tok_try:
+	case Tok_while:
+	case Tok_inherited:
+	case Tok_raise:
+	case Tok_for:
+	case Tok_case:
+	case Tok_goto:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
@@ -999,14 +1028,22 @@ static inline bool FIRST_case_statement(int tt) {
 
 static inline bool FIRST_case_part(int tt) {
 	switch(tt){
-	case Tok_octal_int:
+	case Tok_Plus:
+	case Tok_Lpar:
 	case Tok_unsigned_real:
-	case Tok_quoted_string:
-	case Tok_ident:
+	case Tok_At:
+	case Tok_decimal_int:
+	case Tok_not:
+	case Tok_inherited:
+	case Tok_Lbrack:
 	case Tok_Hash:
 	case Tok_binary_int:
-	case Tok_decimal_int:
+	case Tok_octal_int:
+	case Tok_quoted_string:
+	case Tok_nil:
 	case Tok_hex_int:
+	case Tok_Minus:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
@@ -1014,14 +1051,22 @@ static inline bool FIRST_case_part(int tt) {
 
 static inline bool FIRST_case_range(int tt) {
 	switch(tt){
-	case Tok_octal_int:
+	case Tok_Plus:
+	case Tok_Lpar:
 	case Tok_unsigned_real:
-	case Tok_quoted_string:
-	case Tok_ident:
+	case Tok_At:
+	case Tok_decimal_int:
+	case Tok_not:
+	case Tok_inherited:
+	case Tok_Lbrack:
 	case Tok_Hash:
 	case Tok_binary_int:
-	case Tok_decimal_int:
+	case Tok_octal_int:
+	case Tok_nil:
+	case Tok_quoted_string:
 	case Tok_hex_int:
+	case Tok_Minus:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
@@ -1045,22 +1090,22 @@ static inline bool FIRST_control_variable(int tt) {
 
 static inline bool FIRST_initial_value(int tt) {
 	switch(tt){
-	case Tok_octal_int:
 	case Tok_Plus:
+	case Tok_Lpar:
 	case Tok_unsigned_real:
-	case Tok_quoted_string:
+	case Tok_At:
+	case Tok_decimal_int:
+	case Tok_not:
 	case Tok_inherited:
-	case Tok_ident:
-	case Tok_Minus:
+	case Tok_Lbrack:
 	case Tok_Hash:
 	case Tok_binary_int:
-	case Tok_decimal_int:
-	case Tok_At:
-	case Tok_hex_int:
+	case Tok_octal_int:
+	case Tok_quoted_string:
 	case Tok_nil:
-	case Tok_Lpar:
-	case Tok_not:
-	case Tok_Lbrack:
+	case Tok_hex_int:
+	case Tok_Minus:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
@@ -1068,29 +1113,29 @@ static inline bool FIRST_initial_value(int tt) {
 
 static inline bool FIRST_final_value(int tt) {
 	switch(tt){
-	case Tok_octal_int:
 	case Tok_Plus:
+	case Tok_Lpar:
 	case Tok_unsigned_real:
-	case Tok_quoted_string:
+	case Tok_At:
+	case Tok_decimal_int:
+	case Tok_not:
 	case Tok_inherited:
-	case Tok_ident:
-	case Tok_Minus:
+	case Tok_Lbrack:
 	case Tok_Hash:
 	case Tok_binary_int:
-	case Tok_decimal_int:
-	case Tok_At:
-	case Tok_hex_int:
+	case Tok_octal_int:
+	case Tok_quoted_string:
 	case Tok_nil:
-	case Tok_Lpar:
-	case Tok_not:
-	case Tok_Lbrack:
+	case Tok_hex_int:
+	case Tok_Minus:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
 }
 
 static inline bool FIRST_enumerable(int tt) {
-	return tt == Tok_ident || tt == Tok_Lpar || tt == Tok_Lbrack;
+	return tt == Tok_Lpar || tt == Tok_Lbrack || tt == Tok_ident;
 }
 
 static inline bool FIRST_repeat_statement(int tt) {
@@ -1123,21 +1168,22 @@ static inline bool FIRST_procedure_header(int tt) {
 
 static inline bool FIRST_subroutine_block(int tt) {
 	switch(tt){
-	case Tok_const:
-	case Tok_external:
-	case Tok_procedure:
-	case Tok_type:
-	case Tok_constructor:
-	case Tok_begin:
-	case Tok_label:
-	case Tok_function:
-	case Tok_resourcestring:
-	case Tok_forward:
-	case Tok_var:
-	case Tok_destructor:
 	case Tok_assembler:
+	case Tok_procedure:
+	case Tok_external:
+	case Tok_type:
+	case Tok_begin:
+	case Tok_function:
+	case Tok_constructor:
+	case Tok_var:
 	case Tok_threadvar:
+	case Tok_class:
+	case Tok_label:
 	case Tok_exports:
+	case Tok_forward:
+	case Tok_resourcestring:
+	case Tok_destructor:
+	case Tok_const:
 		return true;
 	default: return false;
 	}
@@ -1151,16 +1197,12 @@ static inline bool FIRST_function_header(int tt) {
 	return tt == Tok_function;
 }
 
-static inline bool FIRST_modifiers_hintdirectives(int tt) {
-	return tt == Tok_Semi || tt == Tok_deprecated || tt == Tok_experimental || tt == Tok_platform || tt == Tok_unimplemented;
-}
-
 static inline bool FIRST_formal_parameter_list(int tt) {
 	return tt == Tok_Lpar;
 }
 
 static inline bool FIRST_parameter_declaration(int tt) {
-	return tt == Tok_const || tt == Tok_ident || tt == Tok_out || tt == Tok_var;
+	return tt == Tok_out || tt == Tok_var || tt == Tok_ident || tt == Tok_const;
 }
 
 static inline bool FIRST_value_parameter(int tt) {
@@ -1193,59 +1235,31 @@ static inline bool FIRST_modifiers(int tt) {
 
 static inline bool FIRST_modifier(int tt) {
 	switch(tt){
-	case Tok_sysv_abi_default:
-	case Tok_inline:
-	case Tok_register:
-	case Tok_interrupt:
-	case Tok_varargs:
-	case Tok_local:
-	case Tok_saveregisters:
-	case Tok_cdecl:
-	case Tok_alias:
 	case Tok_noreturn:
-	case Tok_sysv_abi_cdecl:
-	case Tok_public:
-	case Tok_nostackframe:
-	case Tok_iocheck:
-	case Tok_vectorcall:
-	case Tok_softfloat:
-	case Tok_ms_abi_cdecl:
-	case Tok_pascal:
-	case Tok_mwpascal:
-	case Tok_hardfloat:
-	case Tok_cppdecl:
-	case Tok_overload:
-	case Tok_stdcall:
-	case Tok_ms_abi_default:
-	case Tok_export:
-	case Tok_safecall:
-		return true;
-	default: return false;
-	}
-}
-
-static inline bool FIRST_call_modifiers2(int tt) {
-	switch(tt){
-	case Tok_sysv_abi_default:
-	case Tok_inline:
-	case Tok_register:
 	case Tok_varargs:
+	case Tok_cppdecl:
+	case Tok_sysv_abi_cdecl:
+	case Tok_nostackframe:
+	case Tok_hardfloat:
+	case Tok_softfloat:
+	case Tok_ms_abi_default:
+	case Tok_interrupt:
+	case Tok_ms_abi_cdecl:
 	case Tok_local:
 	case Tok_saveregisters:
 	case Tok_cdecl:
-	case Tok_sysv_abi_cdecl:
-	case Tok_nostackframe:
-	case Tok_softfloat:
-	case Tok_vectorcall:
-	case Tok_ms_abi_cdecl:
+	case Tok_export:
+	case Tok_iocheck:
 	case Tok_pascal:
-	case Tok_mwpascal:
-	case Tok_hardfloat:
-	case Tok_cppdecl:
-	case Tok_overload:
-	case Tok_stdcall:
-	case Tok_ms_abi_default:
 	case Tok_safecall:
+	case Tok_mwpascal:
+	case Tok_alias:
+	case Tok_register:
+	case Tok_inline:
+	case Tok_overload:
+	case Tok_vectorcall:
+	case Tok_stdcall:
+	case Tok_sysv_abi_default:
 		return true;
 	default: return false;
 	}
@@ -1256,16 +1270,16 @@ static inline bool FIRST_operator_definition(int tt) {
 }
 
 static inline bool FIRST_assignment_operator_definition(int tt) {
-	return tt == Tok_ColonEq || tt == Tok_explicit;
+	return tt == Tok_explicit || tt == Tok_ColonEq;
 }
 
 static inline bool FIRST_arithmetic_operator_definition(int tt) {
 	switch(tt){
 	case Tok_Plus:
-	case Tok_Slash:
 	case Tok_2Star:
-	case Tok_Minus:
 	case Tok_GtLt:
+	case Tok_Slash:
+	case Tok_Minus:
 	case Tok_Star:
 		return true;
 	default: return false;
@@ -1275,23 +1289,23 @@ static inline bool FIRST_arithmetic_operator_definition(int tt) {
 static inline bool FIRST_comparison_operator_definition(int tt) {
 	switch(tt){
 	case Tok_Geq:
-	case Tok_Lt:
-	case Tok_LtGt:
-	case Tok_in:
 	case Tok_Gt:
-	case Tok_Eq:
+	case Tok_in:
+	case Tok_LtGt:
 	case Tok_Leq:
+	case Tok_Eq:
+	case Tok_Lt:
 		return true;
 	default: return false;
 	}
 }
 
 static inline bool FIRST_logical_operator_definition(int tt) {
-	return tt == Tok_or || tt == Tok_and || tt == Tok_xor || tt == Tok_not;
+	return tt == Tok_or || tt == Tok_and || tt == Tok_not || tt == Tok_xor;
 }
 
 static inline bool FIRST_other_operator_definition(int tt) {
-	return tt == Tok_ident;
+	return tt == Tok_inc || tt == Tok_enumerator || tt == Tok_dec;
 }
 
 static inline bool FIRST_raise_statement(int tt) {
@@ -1308,22 +1322,22 @@ static inline bool FIRST_try_statement(int tt) {
 
 static inline bool FIRST_exceptionhandlers(int tt) {
 	switch(tt){
-	case Tok_goto:
 	case Tok_asm:
-	case Tok_while:
-	case Tok_try:
 	case Tok_with:
-	case Tok_ident:
-	case Tok_inherited:
-	case Tok_Semi:
-	case Tok_for:
-	case Tok_decimal_int:
-	case Tok_raise:
-	case Tok_case:
-	case Tok_begin:
-	case Tok_repeat:
-	case Tok_on:
 	case Tok_if:
+	case Tok_repeat:
+	case Tok_begin:
+	case Tok_Semi:
+	case Tok_decimal_int:
+	case Tok_try:
+	case Tok_while:
+	case Tok_inherited:
+	case Tok_raise:
+	case Tok_for:
+	case Tok_case:
+	case Tok_goto:
+	case Tok_ident:
+	case Tok_on:
 		return true;
 	default: return false;
 	}
@@ -1334,45 +1348,52 @@ static inline bool FIRST_exception_handler(int tt) {
 }
 
 static inline bool FIRST_string_literal(int tt) {
-	return tt == Tok_quoted_string || tt == Tok_Hash;
+	return tt == Tok_Hash || tt == Tok_quoted_string;
 }
 
 static inline bool FIRST_string_constant(int tt) {
-	return tt == Tok_quoted_string || tt == Tok_Hash;
+	return tt == Tok_Hash || tt == Tok_quoted_string;
 }
 
 static inline bool FIRST_integer_constant(int tt) {
-	return tt == Tok_octal_int || tt == Tok_binary_int || tt == Tok_decimal_int || tt == Tok_hex_int;
+	return tt == Tok_decimal_int || tt == Tok_binary_int || tt == Tok_octal_int || tt == Tok_hex_int;
 }
 
 static inline bool FIRST_result_type(int tt) {
 	switch(tt){
-	case Tok_function:
-	case Tok_unsigned_real:
-	case Tok_record:
-	case Tok_procedure:
-	case Tok_set:
-	case Tok_packed:
-	case Tok_array:
-	case Tok_decimal_int:
-	case Tok_generic:
-	case Tok_ident:
-	case Tok_binary_int:
+	case Tok_nil:
+	case Tok_inherited:
 	case Tok_hex_int:
-	case Tok_quoted_string:
-	case Tok_type:
-	case Tok_class:
-	case Tok_octal_int:
-	case Tok_string:
-	case Tok_object:
-	case Tok_Hash:
-	case Tok_specialize:
-	case Tok_Hat:
-	case Tok_Lpar:
-	case Tok_file:
+	case Tok_At:
+	case Tok_array:
+	case Tok_Lbrack:
 	case Tok_interface:
+	case Tok_file:
+	case Tok_octal_int:
+	case Tok_not:
+	case Tok_binary_int:
+	case Tok_generic:
+	case Tok_string:
+	case Tok_Plus:
+	case Tok_type:
+	case Tok_object:
+	case Tok_record:
+	case Tok_Hash:
+	case Tok_Hat:
+	case Tok_procedure:
+	case Tok_quoted_string:
+	case Tok_unsigned_real:
+	case Tok_decimal_int:
+	case Tok_packed:
+	case Tok_Minus:
+	case Tok_specialize:
 	case Tok_bitpacked:
+	case Tok_function:
 	case Tok_ansistring:
+	case Tok_class:
+	case Tok_set:
+	case Tok_ident:
+	case Tok_Lpar:
 		return true;
 	default: return false;
 	}
@@ -1399,46 +1420,46 @@ static inline bool FIRST_variable_identifier(int tt) {
 }
 
 static inline bool FIRST_parameter_list(int tt) {
-	return tt == Tok_const || tt == Tok_ident || tt == Tok_out || tt == Tok_var;
+	return tt == Tok_out || tt == Tok_var || tt == Tok_ident || tt == Tok_const;
 }
 
 static inline bool FIRST_default_parameter_value(int tt) {
 	switch(tt){
-	case Tok_octal_int:
 	case Tok_Plus:
+	case Tok_Lpar:
 	case Tok_unsigned_real:
-	case Tok_quoted_string:
+	case Tok_At:
+	case Tok_decimal_int:
+	case Tok_not:
 	case Tok_inherited:
-	case Tok_ident:
-	case Tok_Minus:
+	case Tok_Lbrack:
 	case Tok_Hash:
 	case Tok_binary_int:
-	case Tok_decimal_int:
-	case Tok_At:
-	case Tok_hex_int:
+	case Tok_octal_int:
+	case Tok_quoted_string:
 	case Tok_nil:
-	case Tok_Lpar:
-	case Tok_not:
-	case Tok_Lbrack:
+	case Tok_hex_int:
+	case Tok_Minus:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
 }
 
 static inline bool FIRST_parameter_type(int tt) {
-	return tt == Tok_ident;
+	return tt == Tok_string || tt == Tok_ident;
 }
 
 static inline bool FIRST_constant(int tt) {
 	switch(tt){
-	case Tok_octal_int:
 	case Tok_unsigned_real:
-	case Tok_quoted_string:
-	case Tok_ident:
+	case Tok_decimal_int:
 	case Tok_Hash:
 	case Tok_binary_int:
-	case Tok_decimal_int:
+	case Tok_octal_int:
+	case Tok_quoted_string:
 	case Tok_hex_int:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
@@ -1454,25 +1475,29 @@ static inline bool FIRST_string_constant_declaration(int tt) {
 
 static inline bool FIRST_address_expression(int tt) {
 	switch(tt){
-	case Tok_octal_int:
 	case Tok_Plus:
+	case Tok_Lpar:
 	case Tok_unsigned_real:
-	case Tok_quoted_string:
+	case Tok_At:
+	case Tok_decimal_int:
+	case Tok_not:
 	case Tok_inherited:
-	case Tok_ident:
-	case Tok_Minus:
+	case Tok_Lbrack:
 	case Tok_Hash:
 	case Tok_binary_int:
-	case Tok_decimal_int:
-	case Tok_At:
-	case Tok_hex_int:
+	case Tok_octal_int:
+	case Tok_quoted_string:
 	case Tok_nil:
-	case Tok_Lpar:
-	case Tok_not:
-	case Tok_Lbrack:
+	case Tok_hex_int:
+	case Tok_Minus:
+	case Tok_ident:
 		return true;
 	default: return false;
 	}
+}
+
+static inline bool FIRST_address_constant(int tt) {
+	return tt == Tok_At;
 }
 
 static inline bool FIRST_array_constant(int tt) {
@@ -1480,19 +1505,19 @@ static inline bool FIRST_array_constant(int tt) {
 }
 
 static inline bool FIRST_label_def(int tt) {
-	return tt == Tok_ident || tt == Tok_decimal_int;
+	return tt == Tok_decimal_int || tt == Tok_ident;
 }
 
 static inline bool FIRST_unsigned_number(int tt) {
-	return tt == Tok_octal_int || tt == Tok_unsigned_real || tt == Tok_binary_int || tt == Tok_decimal_int || tt == Tok_hex_int;
+	return tt == Tok_unsigned_real || tt == Tok_decimal_int || tt == Tok_binary_int || tt == Tok_octal_int || tt == Tok_hex_int;
 }
 
 static inline bool FIRST_unsigned_integer(int tt) {
-	return tt == Tok_octal_int || tt == Tok_binary_int || tt == Tok_decimal_int || tt == Tok_hex_int;
+	return tt == Tok_decimal_int || tt == Tok_binary_int || tt == Tok_octal_int || tt == Tok_hex_int;
 }
 
 static inline bool FIRST_character_string(int tt) {
-	return tt == Tok_quoted_string || tt == Tok_Hash;
+	return tt == Tok_Hash || tt == Tok_quoted_string;
 }
 
 static inline bool FIRST_control_string(int tt) {
@@ -1500,6 +1525,10 @@ static inline bool FIRST_control_string(int tt) {
 }
 
 static inline bool FIRST_selector(int tt) {
+	return tt == Tok_ident;
+}
+
+static inline bool FIRST_designator(int tt) {
 	return tt == Tok_ident;
 }
 
@@ -1523,20 +1552,21 @@ void Parser::next() {
 	}
 }
 
-int Parser::peek(int off) {
+Token Parser::peek(int off) {
 	if( off == 1 )
-		return la.d_type;
+		return la;
 	else if( off == 0 )
-		return cur.d_type;
+		return cur;
 	else
-		return scanner->peek(off-1).d_type;
+		return scanner->peek(off-1);
 }
 
 void Parser::invalid(const char* what) {
+	errors << Error(QString("invalid %1").arg(what),la.d_lineNr, la.d_colNr, la.d_sourcePath);
 }
 
-void Parser::expect(int tt, const char* where) {
-	if( la.d_type == tt) next(); 
+void Parser::expect(int tt, bool pkw, const char* where) {
+	if( la.d_type == tt || la.d_code == tt) next(); 
 	else errors << Error(QString("'%1' expected in %2").arg(tokenTypeString(tt)).arg(where),la.d_lineNr, la.d_colNr, la.d_sourcePath);
 }
 
@@ -1553,21 +1583,21 @@ void Parser::FreePascal(SynTree* st) {
 
 void Parser::program_(SynTree* st) {
 	program_header(st);
-	expect(Tok_Semi, "program_");
+	expect(Tok_Semi, false, "program_");
 	if( FIRST_uses_clause(la.d_type) ) {
 		uses_clause(st);
 	}
 	block(st);
-	expect(Tok_Dot, "program_");
+	expect(Tok_Dot, false, "program_");
 }
 
 void Parser::program_header(SynTree* st) {
-	expect(Tok_program, "program_header");
+	expect(Tok_program, false, "program_header");
 	identifier(st);
 	if( la.d_type == Tok_Lpar ) {
-		expect(Tok_Lpar, "program_header");
+		expect(Tok_Lpar, false, "program_header");
 		program_parameters(st);
-		expect(Tok_Rpar, "program_header");
+		expect(Tok_Rpar, false, "program_header");
 	}
 }
 
@@ -1576,19 +1606,19 @@ void Parser::program_parameters(SynTree* st) {
 }
 
 void Parser::uses_clause(SynTree* st) {
-	expect(Tok_uses, "uses_clause");
+	expect(Tok_uses, false, "uses_clause");
 	uses_clause_(st);
 	while( la.d_type == Tok_Comma ) {
-		expect(Tok_Comma, "uses_clause");
+		expect(Tok_Comma, false, "uses_clause");
 		uses_clause_(st);
 	}
-	expect(Tok_Semi, "uses_clause");
+	expect(Tok_Semi, false, "uses_clause");
 }
 
 void Parser::uses_clause_(SynTree* st) {
 	identifier(st);
 	if( la.d_type == Tok_in ) {
-		expect(Tok_in, "uses_clause_");
+		expect(Tok_in, false, "uses_clause_");
 		string_literal(st);
 	}
 }
@@ -1605,33 +1635,29 @@ void Parser::unit_(SynTree* st) {
 			finalization_part(st);
 		}
 	} else if( la.d_type == Tok_begin ) {
-		expect(Tok_begin, "unit_");
+		expect(Tok_begin, false, "unit_");
 		statement(st);
 		while( la.d_type == Tok_Semi ) {
-			expect(Tok_Semi, "unit_");
+			expect(Tok_Semi, false, "unit_");
 			statement(st);
 		}
 	} else
 		invalid("unit_");
-	expect(Tok_end, "unit_");
-	expect(Tok_Dot, "unit_");
+	expect(Tok_end, false, "unit_");
+	expect(Tok_Dot, false, "unit_");
 }
 
 void Parser::unit_header(SynTree* st) {
-	expect(Tok_unit, "unit_header");
-	identifier(st);
-	while( la.d_type == Tok_Dot ) {
-		expect(Tok_Dot, "unit_header");
-		identifier(st);
-	}
-	if( FIRST_hintdirectives(la.d_type) ) {
+	expect(Tok_unit, false, "unit_header");
+	designator(st);
+	if( FIRST_hintdirectives(la.d_type) || FIRST_hintdirectives(la.d_code) ) {
 		hintdirectives(st);
 	}
-	expect(Tok_Semi, "unit_header");
+	expect(Tok_Semi, false, "unit_header");
 }
 
 void Parser::interface_part(SynTree* st) {
-	expect(Tok_interface, "interface_part");
+	expect(Tok_interface, false, "interface_part");
 	if( FIRST_uses_clause(la.d_type) ) {
 		uses_clause(st);
 	}
@@ -1652,16 +1678,21 @@ void Parser::interface_part(SynTree* st) {
 }
 
 void Parser::procedure_headers_part(SynTree* st) {
-	func_proc_header(st);
-	expect(Tok_Semi, "procedure_headers_part");
-	if( FIRST_call_modifiers(la.d_type) ) {
+	if( FIRST_procedure_header(la.d_type) ) {
+		procedure_header(st);
+	} else if( FIRST_function_header(la.d_type) ) {
+		function_header(st);
+	} else
+		invalid("procedure_headers_part");
+	expect(Tok_Semi, false, "procedure_headers_part");
+	if( FIRST_call_modifiers(la.d_type) || FIRST_call_modifiers(la.d_code) ) {
 		call_modifiers(st);
-		expect(Tok_Semi, "procedure_headers_part");
+		expect(Tok_Semi, false, "procedure_headers_part");
 	}
 }
 
 void Parser::implementation_part(SynTree* st) {
-	expect(Tok_implementation, "implementation_part");
+	expect(Tok_implementation, false, "implementation_part");
 	if( FIRST_uses_clause(la.d_type) ) {
 		uses_clause(st);
 	}
@@ -1671,60 +1702,60 @@ void Parser::implementation_part(SynTree* st) {
 }
 
 void Parser::initialization_part(SynTree* st) {
-	expect(Tok_initialization, "initialization_part");
+	expect(Tok_initialization, false, "initialization_part");
 	statement(st);
 	while( la.d_type == Tok_Semi ) {
-		expect(Tok_Semi, "initialization_part");
+		expect(Tok_Semi, false, "initialization_part");
 		statement(st);
 	}
 }
 
 void Parser::finalization_part(SynTree* st) {
-	expect(Tok_finalization, "finalization_part");
+	expect(Tok_finalization, false, "finalization_part");
 	statement(st);
 	while( la.d_type == Tok_Semi ) {
-		expect(Tok_Semi, "finalization_part");
+		expect(Tok_Semi, false, "finalization_part");
 		statement(st);
 	}
 }
 
 void Parser::library_(SynTree* st) {
 	library_header(st);
-	expect(Tok_Semi, "library_");
+	expect(Tok_Semi, false, "library_");
 	if( FIRST_uses_clause(la.d_type) ) {
 		uses_clause(st);
 	}
 	block(st);
-	expect(Tok_Dot, "library_");
+	expect(Tok_Dot, false, "library_");
 }
 
 void Parser::library_header(SynTree* st) {
-	expect(Tok_library, "library_header");
+	expect(Tok_library, false, "library_header");
 	identifier(st);
 }
 
 void Parser::exports_clause(SynTree* st) {
-	expect(Tok_exports, "exports_clause");
+	expect(Tok_exports, false, "exports_clause");
 	exports_list(st);
-	expect(Tok_Semi, "exports_clause");
+	expect(Tok_Semi, false, "exports_clause");
 }
 
 void Parser::exports_list(SynTree* st) {
 	exports_entry(st);
 	while( la.d_type == Tok_Comma ) {
-		expect(Tok_Comma, "exports_list");
+		expect(Tok_Comma, false, "exports_list");
 		exports_entry(st);
 	}
 }
 
 void Parser::exports_entry(SynTree* st) {
 	identifier(st);
-	if( la.d_type == Tok_index ) {
-		expect(Tok_index, "exports_entry");
+	if( la.d_code == Tok_index ) {
+		expect(Tok_index, true, "exports_entry");
 		integer_constant(st);
 	}
-	if( la.d_type == Tok_name ) {
-		expect(Tok_name, "exports_entry");
+	if( la.d_code == Tok_name ) {
+		expect(Tok_name, true, "exports_entry");
 		string_constant(st);
 	}
 }
@@ -1743,14 +1774,17 @@ void Parser::declaration_part(SynTree* st) {
 		constant_declaration_part(st);
 	} else if( FIRST_resourcestring_declaration_part(la.d_type) ) {
 		resourcestring_declaration_part(st);
+	} else if( ( peek(1).d_type == Tok_class && ( peek(2).d_type == Tok_constructor || peek(2).d_type == Tok_destructor || peek(2).d_type == Tok_function || peek(2).d_type == Tok_procedure ) )  ) {
+		expect(Tok_class, false, "declaration_part");
+		func_proc_declaration_part(st);
+	} else if( FIRST_func_proc_declaration_part(la.d_type) ) {
+		func_proc_declaration_part(st);
 	} else if( FIRST_type_declaration_part(la.d_type) ) {
 		type_declaration_part(st);
 	} else if( FIRST_variable_declaration_part(la.d_type) ) {
 		variable_declaration_part(st);
 	} else if( FIRST_threadvariable_declaration_part(la.d_type) ) {
 		threadvariable_declaration_part(st);
-	} else if( FIRST_func_proc_declaration_part(la.d_type) ) {
-		func_proc_declaration_part(st);
 	} else if( FIRST_exports_clause(la.d_type) ) {
 		exports_clause(st);
 	} else
@@ -1758,51 +1792,51 @@ void Parser::declaration_part(SynTree* st) {
 }
 
 void Parser::label_declaration_part(SynTree* st) {
-	expect(Tok_label, "label_declaration_part");
+	expect(Tok_label, false, "label_declaration_part");
 	label_def(st);
 	while( la.d_type == Tok_Comma ) {
-		expect(Tok_Comma, "label_declaration_part");
+		expect(Tok_Comma, false, "label_declaration_part");
 		label_def(st);
 	}
-	expect(Tok_Semi, "label_declaration_part");
+	expect(Tok_Semi, false, "label_declaration_part");
 }
 
 void Parser::constant_declaration_part(SynTree* st) {
-	expect(Tok_const, "constant_declaration_part");
+	expect(Tok_const, false, "constant_declaration_part");
 	constant_declaration(st);
-	while( ( peek(1) == Tok_ident && ( peek(2) == Tok_Eq || peek(2) == Tok_Colon ) )  ) {
+	while( ( peek(1).d_type == Tok_ident && ( peek(2).d_type == Tok_Eq || peek(2).d_type == Tok_Colon ) )  ) {
 		constant_declaration(st);
 	}
 }
 
 void Parser::resourcestring_declaration_part(SynTree* st) {
-	expect(Tok_resourcestring, "resourcestring_declaration_part");
+	expect(Tok_resourcestring, false, "resourcestring_declaration_part");
 	string_constant_declaration(st);
-	while( ( peek(1) == Tok_ident && peek(2) == Tok_Eq )  ) {
+	while( ( peek(1).d_type == Tok_ident && peek(2).d_type == Tok_Eq )  ) {
 		string_constant_declaration(st);
 	}
 }
 
 void Parser::type_declaration_part(SynTree* st) {
-	expect(Tok_type, "type_declaration_part");
+	expect(Tok_type, false, "type_declaration_part");
 	type_declaration(st);
-	while( ( peek(1) == Tok_ident && peek(2) == Tok_Eq )  ) {
+	while( ( peek(1).d_type == Tok_ident && peek(2).d_type == Tok_Eq )  ) {
 		type_declaration(st);
 	}
 }
 
 void Parser::variable_declaration_part(SynTree* st) {
-	expect(Tok_var, "variable_declaration_part");
+	expect(Tok_var, false, "variable_declaration_part");
 	variable_declaration(st);
-	while( ( peek(1) == Tok_ident && ( peek(2) == Tok_Colon || peek(2) == Tok_Comma ) )  ) {
+	while( ( peek(1).d_type == Tok_ident && ( peek(2).d_type == Tok_Colon || peek(2).d_type == Tok_Comma ) )  ) {
 		variable_declaration(st);
 	}
 }
 
 void Parser::threadvariable_declaration_part(SynTree* st) {
-	expect(Tok_threadvar, "threadvariable_declaration_part");
+	expect(Tok_threadvar, false, "threadvariable_declaration_part");
 	variable_declaration(st);
-	while( ( peek(1) == Tok_ident && peek(2) == Tok_Colon )  ) {
+	while( ( peek(1).d_type == Tok_ident && peek(2).d_type == Tok_Colon )  ) {
 		variable_declaration(st);
 	}
 }
@@ -1825,25 +1859,25 @@ void Parser::statement_part(SynTree* st) {
 }
 
 void Parser::hint_directive(SynTree* st) {
-	if( la.d_type == Tok_deprecated ) {
-		expect(Tok_deprecated, "hint_directive");
+	if( la.d_code == Tok_deprecated ) {
+		expect(Tok_deprecated, true, "hint_directive");
 		if( FIRST_string_constant(la.d_type) ) {
 			string_constant(st);
 		}
-	} else if( la.d_type == Tok_experimental ) {
-		expect(Tok_experimental, "hint_directive");
-	} else if( la.d_type == Tok_platform ) {
-		expect(Tok_platform, "hint_directive");
-	} else if( la.d_type == Tok_unimplemented ) {
-		expect(Tok_unimplemented, "hint_directive");
+	} else if( la.d_code == Tok_experimental ) {
+		expect(Tok_experimental, true, "hint_directive");
+	} else if( la.d_code == Tok_platform ) {
+		expect(Tok_platform, true, "hint_directive");
+	} else if( la.d_code == Tok_unimplemented ) {
+		expect(Tok_unimplemented, true, "hint_directive");
 	} else
 		invalid("hint_directive");
 }
 
 void Parser::hintdirectives(SynTree* st) {
 	hint_directive(st);
-	while( ( peek(1) == Tok_Semi && ( peek(2) == Tok_deprecated || peek(2) == Tok_experimental || peek(2) == Tok_platform || peek(2) == Tok_unimplemented ) )  ) {
-		expect(Tok_Semi, "hintdirectives");
+	while( ( peek(1).d_type == Tok_Semi && ( peek(2).d_code == Tok_deprecated || peek(2).d_code == Tok_experimental || peek(2).d_code == Tok_platform || peek(2).d_code == Tok_unimplemented ) )  ) {
+		expect(Tok_Semi, false, "hintdirectives");
 		hint_directive(st);
 	}
 }
@@ -1851,58 +1885,58 @@ void Parser::hintdirectives(SynTree* st) {
 void Parser::constant_declaration(SynTree* st) {
 	identifier(st);
 	if( la.d_type == Tok_Eq ) {
-		expect(Tok_Eq, "constant_declaration");
+		expect(Tok_Eq, false, "constant_declaration");
 		expression(st);
 	} else if( la.d_type == Tok_Colon ) {
-		expect(Tok_Colon, "constant_declaration");
+		expect(Tok_Colon, false, "constant_declaration");
 		type_(st);
-		expect(Tok_Eq, "constant_declaration");
+		expect(Tok_Eq, false, "constant_declaration");
 		typed_constant(st);
 	} else
 		invalid("constant_declaration");
-	if( FIRST_hintdirectives(la.d_type) ) {
+	if( FIRST_hintdirectives(la.d_type) || FIRST_hintdirectives(la.d_code) ) {
 		hintdirectives(st);
 	}
-	expect(Tok_Semi, "constant_declaration");
+	expect(Tok_Semi, false, "constant_declaration");
 }
 
 void Parser::typed_constant(SynTree* st) {
 	if( FIRST_constant(la.d_type) ) {
 		constant(st);
-	} else if( la.d_type == Tok_address_constant ) {
-		expect(Tok_address_constant, "typed_constant");
+	} else if( FIRST_address_constant(la.d_type) ) {
+		address_constant(st);
 	} else if( FIRST_array_constant(la.d_type) ) {
 		array_constant(st);
 	} else if( la.d_type == Tok_record_constant ) {
-		expect(Tok_record_constant, "typed_constant");
+		expect(Tok_record_constant, false, "typed_constant");
 	} else if( la.d_type == Tok_procedural_constant ) {
-		expect(Tok_procedural_constant, "typed_constant");
+		expect(Tok_procedural_constant, false, "typed_constant");
 	} else
 		invalid("typed_constant");
 }
 
 void Parser::type_declaration(SynTree* st) {
 	identifier(st);
-	expect(Tok_Eq, "type_declaration");
+	expect(Tok_Eq, false, "type_declaration");
 	type_(st);
-	if( FIRST_hintdirectives(la.d_type) ) {
+	if( FIRST_hintdirectives(la.d_type) || FIRST_hintdirectives(la.d_code) ) {
 		hintdirectives(st);
 	}
-	expect(Tok_Semi, "type_declaration");
+	expect(Tok_Semi, false, "type_declaration");
 }
 
 void Parser::type_(SynTree* st) {
-	if( ( peek(2) == Tok_helper )  ) {
+	if( ( peek(2).d_code == Tok_helper )  ) {
 		helper_type(st);
-	} else if( ( peek(1) == Tok_generic )  ) {
+	} else if( FIRST_generic_type(la.d_type) || FIRST_generic_type(la.d_code) ) {
 		generic_type(st);
-	} else if( ( ( peek(1) == Tok_array || peek(1) == Tok_bitpacked || peek(1) == Tok_class || peek(1) == Tok_file || peek(1) == Tok_interface || peek(1) == Tok_object || peek(1) == Tok_packed || peek(1) == Tok_record || peek(1) == Tok_set ) )  ) {
+	} else if( FIRST_structured_type(la.d_type) || FIRST_structured_type(la.d_code) ) {
 		structured_type(st);
-	} else if( ( peek(1) == Tok_specialize )  ) {
+	} else if( FIRST_specialized_type(la.d_type) || FIRST_specialized_type(la.d_code) ) {
 		specialized_type(st);
-	} else if( la.d_type == Tok_type || FIRST_simple_type(la.d_type) ) {
+	} else if( la.d_type == Tok_type || FIRST_simple_type(la.d_type) || FIRST_simple_type(la.d_code) ) {
 		if( la.d_type == Tok_type ) {
-			expect(Tok_type, "type_");
+			expect(Tok_type, false, "type_");
 		}
 		simple_type(st);
 	} else if( FIRST_pointer_type(la.d_type) ) {
@@ -1914,47 +1948,52 @@ void Parser::type_(SynTree* st) {
 }
 
 void Parser::simple_type(SynTree* st) {
-	if( ( ( peek(1) == Tok_string || peek(1) == Tok_ansistring ) )  ) {
+	if( ( ( peek(1).d_type == Tok_string || peek(1).d_code == Tok_ansistring ) )  ) {
 		string_type(st);
-	} else if( FIRST_ordinal_type(la.d_type) ) {
+	} else if( FIRST_ordinal_type(la.d_type) || FIRST_ordinal_type(la.d_code) ) {
 		ordinal_type(st);
 	} else
 		invalid("simple_type");
 }
 
 void Parser::type_name(SynTree* st) {
-	identifier(st);
+	if( FIRST_identifier(la.d_type) ) {
+		identifier(st);
+	} else if( la.d_type == Tok_string ) {
+		expect(Tok_string, false, "type_name");
+	} else
+		invalid("type_name");
 }
 
 void Parser::subrange_type(SynTree* st) {
-	constant(st);
-	expect(Tok_2Dot, "subrange_type");
-	constant(st);
+	constant_expression(st);
+	expect(Tok_2Dot, false, "subrange_type");
+	constant_expression(st);
 }
 
 void Parser::string_type(SynTree* st) {
 	if( la.d_type == Tok_string ) {
-		expect(Tok_string, "string_type");
-	} else if( la.d_type == Tok_ansistring ) {
-		expect(Tok_ansistring, "string_type");
+		expect(Tok_string, false, "string_type");
+	} else if( la.d_code == Tok_ansistring ) {
+		expect(Tok_ansistring, true, "string_type");
 	} else
 		invalid("string_type");
 	if( la.d_type == Tok_Lbrack || la.d_type == Tok_Lpar ) {
 		if( la.d_type == Tok_Lbrack ) {
-			expect(Tok_Lbrack, "string_type");
-			unsigned_integer(st);
-			expect(Tok_Rbrack, "string_type");
+			expect(Tok_Lbrack, false, "string_type");
+			constant_expression(st);
+			expect(Tok_Rbrack, false, "string_type");
 		} else if( la.d_type == Tok_Lpar ) {
-			expect(Tok_Lpar, "string_type");
+			expect(Tok_Lpar, false, "string_type");
 			unsigned_integer(st);
-			expect(Tok_Rpar, "string_type");
+			expect(Tok_Rpar, false, "string_type");
 		} else
 			invalid("string_type");
 	}
 }
 
 void Parser::ordinal_type(SynTree* st) {
-	if( ( peek(2) == Tok_2Dot )  ) {
+	if( ( peek(2).d_type == Tok_2Dot )  ) {
 		subrange_type(st);
 	} else if( FIRST_enumerated_type(la.d_type) ) {
 		enumerated_type(st);
@@ -1967,19 +2006,19 @@ void Parser::ordinal_type(SynTree* st) {
 void Parser::identifier_list(SynTree* st) {
 	identifier(st);
 	while( la.d_type == Tok_Comma ) {
-		expect(Tok_Comma, "identifier_list");
+		expect(Tok_Comma, false, "identifier_list");
 		identifier(st);
 	}
 }
 
 void Parser::enumerated_type(SynTree* st) {
-	expect(Tok_Lpar, "enumerated_type");
+	expect(Tok_Lpar, false, "enumerated_type");
 	enumerated_type_(st);
 	while( la.d_type == Tok_Comma ) {
-		expect(Tok_Comma, "enumerated_type");
+		expect(Tok_Comma, false, "enumerated_type");
 		enumerated_type_(st);
 	}
-	expect(Tok_Rpar, "enumerated_type");
+	expect(Tok_Rpar, false, "enumerated_type");
 }
 
 void Parser::enumerated_type_(SynTree* st) {
@@ -1988,8 +2027,8 @@ void Parser::enumerated_type_(SynTree* st) {
 
 void Parser::assigned_enum_list(SynTree* st) {
 	assigned_enum_(st);
-	while( ( peek(1) == Tok_Comma && peek(2) == Tok_ident )  ) {
-		expect(Tok_Comma, "assigned_enum_list");
+	while( ( peek(1).d_type == Tok_Comma && peek(2).d_type == Tok_ident )  ) {
+		expect(Tok_Comma, false, "assigned_enum_list");
 		assigned_enum_(st);
 	}
 }
@@ -1998,9 +2037,9 @@ void Parser::assigned_enum_(SynTree* st) {
 	identifier(st);
 	if( la.d_type == Tok_Eq || la.d_type == Tok_ColonEq ) {
 		if( la.d_type == Tok_Eq ) {
-			expect(Tok_Eq, "assigned_enum_");
+			expect(Tok_Eq, false, "assigned_enum_");
 		} else if( la.d_type == Tok_ColonEq ) {
-			expect(Tok_ColonEq, "assigned_enum_");
+			expect(Tok_ColonEq, false, "assigned_enum_");
 		} else
 			invalid("assigned_enum_");
 		expression(st);
@@ -2008,9 +2047,9 @@ void Parser::assigned_enum_(SynTree* st) {
 }
 
 void Parser::structured_type(SynTree* st) {
-	if( ( peek(1) == Tok_class && peek(2) == Tok_of )  ) {
+	if( ( peek(1).d_type == Tok_class && peek(2).d_type == Tok_of )  ) {
 		class_reference_type(st);
-	} else if( FIRST_packable_type_(la.d_type) ) {
+	} else if( FIRST_packable_type_(la.d_type) || FIRST_packable_type_(la.d_code) ) {
 		packable_type_(st);
 	} else if( FIRST_interface_type(la.d_type) ) {
 		interface_type(st);
@@ -2023,11 +2062,11 @@ void Parser::structured_type(SynTree* st) {
 }
 
 void Parser::packable_type_(SynTree* st) {
-	if( la.d_type == Tok_packed || la.d_type == Tok_bitpacked ) {
+	if( la.d_type == Tok_packed || la.d_code == Tok_bitpacked ) {
 		if( la.d_type == Tok_packed ) {
-			expect(Tok_packed, "packable_type_");
-		} else if( la.d_type == Tok_bitpacked ) {
-			expect(Tok_bitpacked, "packable_type_");
+			expect(Tok_packed, false, "packable_type_");
+		} else if( la.d_code == Tok_bitpacked ) {
+			expect(Tok_bitpacked, true, "packable_type_");
 		} else
 			invalid("packable_type_");
 	}
@@ -2044,17 +2083,17 @@ void Parser::packable_type_(SynTree* st) {
 }
 
 void Parser::array_type(SynTree* st) {
-	expect(Tok_array, "array_type");
+	expect(Tok_array, false, "array_type");
 	if( la.d_type == Tok_Lbrack ) {
-		expect(Tok_Lbrack, "array_type");
+		expect(Tok_Lbrack, false, "array_type");
 		ordinal_type(st);
 		while( la.d_type == Tok_Comma ) {
-			expect(Tok_Comma, "array_type");
+			expect(Tok_Comma, false, "array_type");
 			ordinal_type(st);
 		}
-		expect(Tok_Rbrack, "array_type");
+		expect(Tok_Rbrack, false, "array_type");
 	}
-	expect(Tok_of, "array_type");
+	expect(Tok_of, false, "array_type");
 	type_(st);
 }
 
@@ -2062,229 +2101,229 @@ void Parser::field_list(SynTree* st) {
 	if( FIRST_fixed_fields(la.d_type) ) {
 		fixed_fields(st);
 	}
-	if( la.d_type == Tok_Semi ) {
-		expect(Tok_Semi, "field_list");
-	}
 	if( FIRST_variant_part(la.d_type) ) {
 		variant_part(st);
 	}
 	if( la.d_type == Tok_Semi ) {
-		expect(Tok_Semi, "field_list");
+		expect(Tok_Semi, false, "field_list");
 	}
 }
 
 void Parser::variant_part(SynTree* st) {
-	expect(Tok_case, "variant_part");
-	if( ( peek(2) == Tok_Colon )  ) {
+	expect(Tok_case, false, "variant_part");
+	if( ( peek(2).d_type == Tok_Colon )  ) {
 		identifier(st);
-		expect(Tok_Colon, "variant_part");
+		expect(Tok_Colon, false, "variant_part");
 	}
 	ordinal_type(st);
-	expect(Tok_of, "variant_part");
+	expect(Tok_of, false, "variant_part");
 	variant(st);
-	while( ( peek(1) == Tok_Semi && ( peek(2) == Tok_binary_int || peek(2) == Tok_decimal_int || peek(2) == Tok_Hash || peek(2) == Tok_hex_int || peek(2) == Tok_ident || peek(2) == Tok_octal_int || peek(2) == Tok_quoted_string || peek(2) == Tok_unsigned_real ) )  ) {
-		expect(Tok_Semi, "variant_part");
-		variant(st);
+	while( ( peek(1).d_type == Tok_Semi && ( peek(2).d_type == Tok_Hash || peek(2).d_type == Tok_binary_int || peek(2).d_type == Tok_decimal_int || peek(2).d_type == Tok_hex_int || peek(2).d_type == Tok_ident || peek(2).d_type == Tok_octal_int || peek(2).d_type == Tok_quoted_string || peek(2).d_type == Tok_unsigned_real ) )  ) {
+		expect(Tok_Semi, false, "variant_part");
+		if( FIRST_variant(la.d_type) ) {
+			variant(st);
+		}
 	}
 }
 
 void Parser::variant(SynTree* st) {
 	constant(st);
 	while( la.d_type == Tok_Comma ) {
-		expect(Tok_Comma, "variant");
+		expect(Tok_Comma, false, "variant");
 		constant(st);
 	}
-	expect(Tok_Colon, "variant");
-	expect(Tok_Lpar, "variant");
+	expect(Tok_Colon, false, "variant");
+	expect(Tok_Lpar, false, "variant");
 	field_list(st);
-	expect(Tok_Rpar, "variant");
+	expect(Tok_Rpar, false, "variant");
 }
 
 void Parser::fixed_fields(SynTree* st) {
 	fixed_field_(st);
-	while( ( peek(1) == Tok_Semi && peek(2) == Tok_ident )  ) {
-		expect(Tok_Semi, "fixed_fields");
-		fixed_field_(st);
+	while( ( peek(1).d_type == Tok_Semi && peek(2).d_type == Tok_ident )  ) {
+		expect(Tok_Semi, false, "fixed_fields");
+		if( FIRST_fixed_field_(la.d_type) ) {
+			fixed_field_(st);
+		}
 	}
 }
 
 void Parser::fixed_field_(SynTree* st) {
 	identifier_list(st);
-	expect(Tok_Colon, "fixed_field_");
+	expect(Tok_Colon, false, "fixed_field_");
 	type_(st);
 }
 
 void Parser::record_type(SynTree* st) {
-	expect(Tok_record, "record_type");
-	while( FIRST_component_list3(la.d_type) ) {
+	expect(Tok_record, false, "record_type");
+	while( FIRST_component_list3(la.d_type) || FIRST_component_list3(la.d_code) ) {
 		component_list3(st);
-	}
-	expect(Tok_end, "record_type");
-}
-
-void Parser::component_list3(SynTree* st) {
-	if( FIRST_record_visibility_specifier(la.d_type) ) {
-		record_visibility_specifier(st);
-	}
-	while( ( peek(1) == Tok_ident && ( peek(2) == Tok_Colon || peek(2) == Tok_Comma ) )  ) {
-		fixed_field_(st);
-	}
-	if( la.d_type == Tok_Semi ) {
-		expect(Tok_Semi, "component_list3");
-	}
-	while( FIRST_record_method_definition(la.d_type) ) {
-		record_method_definition(st);
-	}
-	while( FIRST_property_definition(la.d_type) ) {
-		property_definition(st);
-	}
-	while( FIRST_record_operator_definition(la.d_type) ) {
-		record_operator_definition(st);
 	}
 	if( FIRST_variant_part(la.d_type) ) {
 		variant_part(st);
 	}
 	if( la.d_type == Tok_Semi ) {
-		expect(Tok_Semi, "component_list3");
+		expect(Tok_Semi, false, "record_type");
 	}
+	expect(Tok_end, false, "record_type");
+}
+
+void Parser::component_list3(SynTree* st) {
+	if( FIRST_record_visibility_specifier(la.d_type) || FIRST_record_visibility_specifier(la.d_code) ) {
+		record_visibility_specifier(st);
+	} else if( FIRST_fixed_field_(la.d_type) ) {
+		fixed_field_(st);
+		if( la.d_type == Tok_Semi ) {
+			expect(Tok_Semi, false, "component_list3");
+		}
+	} else if( FIRST_record_method_definition(la.d_type) ) {
+		record_method_definition(st);
+	} else if( FIRST_record_operator_definition(la.d_type) ) {
+		record_operator_definition(st);
+	} else
+		invalid("component_list3");
 }
 
 void Parser::record_visibility_specifier(SynTree* st) {
-	if( la.d_type == Tok_public ) {
-		expect(Tok_public, "record_visibility_specifier");
-	} else if( la.d_type == Tok_strict || la.d_type == Tok_private ) {
-		if( la.d_type == Tok_strict ) {
-			expect(Tok_strict, "record_visibility_specifier");
+	if( la.d_code == Tok_public ) {
+		expect(Tok_public, true, "record_visibility_specifier");
+	} else if( la.d_code == Tok_strict || la.d_code == Tok_private ) {
+		if( la.d_code == Tok_strict ) {
+			expect(Tok_strict, true, "record_visibility_specifier");
 		}
-		expect(Tok_private, "record_visibility_specifier");
+		expect(Tok_private, true, "record_visibility_specifier");
 	} else
 		invalid("record_visibility_specifier");
 }
 
 void Parser::record_method_definition(SynTree* st) {
-	func_proc_header(st);
-	expect(Tok_Semi, "record_method_definition");
-	if( FIRST_call_modifiers(la.d_type) ) {
+	if( FIRST_function_header(la.d_type) ) {
+		function_header(st);
+	} else if( FIRST_procedure_header(la.d_type) ) {
+		procedure_header(st);
+	} else
+		invalid("record_method_definition");
+	expect(Tok_Semi, false, "record_method_definition");
+	if( FIRST_call_modifiers(la.d_type) || FIRST_call_modifiers(la.d_code) ) {
 		call_modifiers(st);
-		expect(Tok_Semi, "record_method_definition");
+		expect(Tok_Semi, false, "record_method_definition");
 	}
 }
 
 void Parser::record_operator_definition(SynTree* st) {
-	expect(Tok_class, "record_operator_definition");
+	expect(Tok_class, false, "record_operator_definition");
 	operator_definition(st);
 }
 
 void Parser::set_type(SynTree* st) {
-	expect(Tok_set, "set_type");
-	expect(Tok_of, "set_type");
+	expect(Tok_set, false, "set_type");
+	expect(Tok_of, false, "set_type");
 	ordinal_type(st);
 }
 
 void Parser::file_type(SynTree* st) {
-	expect(Tok_file, "file_type");
-	if( ( peek(1) == Tok_of && peek(2) == Tok_ident )  ) {
-		expect(Tok_of, "file_type");
+	expect(Tok_file, false, "file_type");
+	if( ( peek(1).d_type == Tok_of && ( peek(2).d_type == Tok_ident || peek(2).d_type == Tok_string ) )  ) {
+		expect(Tok_of, false, "file_type");
 		type_name(st);
 	}
 }
 
 void Parser::pointer_type(SynTree* st) {
-	expect(Tok_Hat, "pointer_type");
+	expect(Tok_Hat, false, "pointer_type");
 	type_name(st);
 }
 
 void Parser::procedural_type(SynTree* st) {
 	func_proc_header(st);
-	if( ( peek(1) == Tok_of && peek(2) == Tok_object )  || ( peek(1) == Tok_is && peek(2) == Tok_nested )  ) {
-		if( ( peek(1) == Tok_of && peek(2) == Tok_object )  ) {
-			expect(Tok_of, "procedural_type");
-			expect(Tok_object, "procedural_type");
-		} else if( ( peek(1) == Tok_is && peek(2) == Tok_nested )  ) {
-			expect(Tok_is, "procedural_type");
-			expect(Tok_nested, "procedural_type");
+	if( ( peek(1).d_type == Tok_of && peek(2).d_type == Tok_object )  || ( peek(1).d_type == Tok_is && peek(2).d_code == Tok_nested )  ) {
+		if( ( peek(1).d_type == Tok_of && peek(2).d_type == Tok_object )  ) {
+			expect(Tok_of, false, "procedural_type");
+			expect(Tok_object, false, "procedural_type");
+		} else if( ( peek(1).d_type == Tok_is && peek(2).d_code == Tok_nested )  ) {
+			expect(Tok_is, false, "procedural_type");
+			expect(Tok_nested, true, "procedural_type");
 		} else
 			invalid("procedural_type");
 	}
-	if( ( peek(1) == Tok_Semi && ( peek(2) == Tok_cdecl || peek(2) == Tok_inline || peek(2) == Tok_pascal || peek(2) == Tok_register || peek(2) == Tok_safecall || peek(2) == Tok_stdcall ) )  ) {
-		expect(Tok_Semi, "procedural_type");
+	if( ( peek(1).d_type == Tok_Semi && ( peek(2).d_code == Tok_cdecl || peek(2).d_type == Tok_inline || peek(2).d_code == Tok_pascal || peek(2).d_code == Tok_register || peek(2).d_code == Tok_safecall || peek(2).d_code == Tok_stdcall ) )  ) {
+		expect(Tok_Semi, false, "procedural_type");
 		call_modifiers(st);
 	}
 }
 
 void Parser::func_proc_header(SynTree* st) {
 	if( la.d_type == Tok_function ) {
-		expect(Tok_function, "func_proc_header");
+		expect(Tok_function, false, "func_proc_header");
 	} else if( la.d_type == Tok_procedure ) {
-		expect(Tok_procedure, "func_proc_header");
+		expect(Tok_procedure, false, "func_proc_header");
 	} else
 		invalid("func_proc_header");
-	identifier(st);
 	formal_parameter_list(st);
 	if( la.d_type == Tok_Colon ) {
-		expect(Tok_Colon, "func_proc_header");
+		expect(Tok_Colon, false, "func_proc_header");
 		result_type(st);
 	}
 }
 
 void Parser::call_modifiers(SynTree* st) {
 	if( la.d_type == Tok_inline ) {
-		expect(Tok_inline, "call_modifiers");
-	} else if( la.d_type == Tok_register ) {
-		expect(Tok_register, "call_modifiers");
-	} else if( la.d_type == Tok_cdecl ) {
-		expect(Tok_cdecl, "call_modifiers");
-	} else if( la.d_type == Tok_pascal ) {
-		expect(Tok_pascal, "call_modifiers");
-	} else if( la.d_type == Tok_stdcall ) {
-		expect(Tok_stdcall, "call_modifiers");
-	} else if( la.d_type == Tok_safecall ) {
-		expect(Tok_safecall, "call_modifiers");
+		expect(Tok_inline, false, "call_modifiers");
+	} else if( la.d_code == Tok_register ) {
+		expect(Tok_register, true, "call_modifiers");
+	} else if( la.d_code == Tok_cdecl ) {
+		expect(Tok_cdecl, true, "call_modifiers");
+	} else if( la.d_code == Tok_pascal ) {
+		expect(Tok_pascal, true, "call_modifiers");
+	} else if( la.d_code == Tok_stdcall ) {
+		expect(Tok_stdcall, true, "call_modifiers");
+	} else if( la.d_code == Tok_safecall ) {
+		expect(Tok_safecall, true, "call_modifiers");
 	} else
 		invalid("call_modifiers");
 }
 
 void Parser::variable_declaration(SynTree* st) {
 	identifier_list(st);
-	expect(Tok_Colon, "variable_declaration");
+	expect(Tok_Colon, false, "variable_declaration");
 	type_(st);
 	if( la.d_type == Tok_Eq ) {
-		expect(Tok_Eq, "variable_declaration");
+		expect(Tok_Eq, false, "variable_declaration");
 		expression(st);
 	}
-	if( ( ( peek(1) == Tok_absolute || peek(1) == Tok_Semi && ( peek(2) == Tok_export || peek(2) == Tok_cvar || peek(2) == Tok_external ) ) )  ) {
+	if( ( ( peek(1).d_type == Tok_absolute || peek(1).d_type == Tok_Semi && ( peek(2).d_code == Tok_export || peek(2).d_code == Tok_cvar || peek(2).d_code == Tok_external ) ) )  ) {
 		variable_modifiers(st);
 	}
-	if( FIRST_hintdirectives(la.d_type) ) {
+	if( FIRST_hintdirectives(la.d_type) || FIRST_hintdirectives(la.d_code) ) {
 		hintdirectives(st);
 	}
-	expect(Tok_Semi, "variable_declaration");
+	expect(Tok_Semi, false, "variable_declaration");
 }
 
 void Parser::variable_modifiers(SynTree* st) {
 	variable_modifier_(st);
-	while( ( ( peek(1) == Tok_absolute || peek(1) == Tok_Semi && ( peek(2) == Tok_export || peek(2) == Tok_cvar || peek(2) == Tok_external ) ) )  ) {
+	while( ( ( peek(1).d_type == Tok_absolute || peek(1).d_type == Tok_Semi && ( peek(2).d_code == Tok_export || peek(2).d_code == Tok_cvar || peek(2).d_code == Tok_external ) ) )  ) {
 		variable_modifier_(st);
 	}
 }
 
 void Parser::variable_modifier_(SynTree* st) {
 	if( la.d_type == Tok_absolute ) {
-		expect(Tok_absolute, "variable_modifier_");
+		expect(Tok_absolute, false, "variable_modifier_");
 		expression(st);
 	} else if( la.d_type == Tok_Semi ) {
-		expect(Tok_Semi, "variable_modifier_");
-		if( la.d_type == Tok_export ) {
-			expect(Tok_export, "variable_modifier_");
-		} else if( la.d_type == Tok_cvar ) {
-			expect(Tok_cvar, "variable_modifier_");
-		} else if( la.d_type == Tok_external ) {
-			expect(Tok_external, "variable_modifier_");
+		expect(Tok_Semi, false, "variable_modifier_");
+		if( la.d_code == Tok_export ) {
+			expect(Tok_export, true, "variable_modifier_");
+		} else if( la.d_code == Tok_cvar ) {
+			expect(Tok_cvar, true, "variable_modifier_");
+		} else if( la.d_code == Tok_external ) {
+			expect(Tok_external, true, "variable_modifier_");
 			if( FIRST_string_constant(la.d_type) ) {
 				string_constant(st);
 			}
-			if( la.d_type == Tok_name ) {
-				expect(Tok_name, "variable_modifier_");
+			if( la.d_code == Tok_name ) {
+				expect(Tok_name, true, "variable_modifier_");
 				string_constant(st);
 			}
 		} else
@@ -2305,93 +2344,93 @@ void Parser::property_interface(SynTree* st) {
 	if( FIRST_property_parameter_list(la.d_type) ) {
 		property_parameter_list(st);
 	}
-	expect(Tok_Colon, "property_interface");
+	expect(Tok_Colon, false, "property_interface");
 	type_name(st);
-	if( la.d_type == Tok_index ) {
-		expect(Tok_index, "property_interface");
+	if( la.d_code == Tok_index ) {
+		expect(Tok_index, true, "property_interface");
 		integer_constant(st);
 	}
 }
 
 void Parser::property_parameter_list(SynTree* st) {
-	expect(Tok_Lbrack, "property_parameter_list");
+	expect(Tok_Lbrack, false, "property_parameter_list");
 	parameter_declaration(st);
 	while( la.d_type == Tok_Semi ) {
-		expect(Tok_Semi, "property_parameter_list");
+		expect(Tok_Semi, false, "property_parameter_list");
 		parameter_declaration(st);
 	}
-	expect(Tok_Rbrack, "property_parameter_list");
+	expect(Tok_Rbrack, false, "property_parameter_list");
 }
 
 void Parser::property_specifiers(SynTree* st) {
-	if( FIRST_read_specifier(la.d_type) ) {
+	if( FIRST_read_specifier(la.d_type) || FIRST_read_specifier(la.d_code) ) {
 		read_specifier(st);
 	}
-	if( FIRST_write_specifier(la.d_type) ) {
+	if( FIRST_write_specifier(la.d_type) || FIRST_write_specifier(la.d_code) ) {
 		write_specifier(st);
 	}
-	if( FIRST_default_specifier(la.d_type) ) {
+	if( FIRST_default_specifier(la.d_type) || FIRST_default_specifier(la.d_code) ) {
 		default_specifier(st);
 	}
 }
 
 void Parser::read_specifier(SynTree* st) {
-	expect(Tok_read, "read_specifier");
+	expect(Tok_read, true, "read_specifier");
 	field_or_function(st);
 }
 
 void Parser::write_specifier(SynTree* st) {
-	expect(Tok_write, "write_specifier");
+	expect(Tok_write, true, "write_specifier");
 	field_or_procedure(st);
 }
 
 void Parser::default_specifier(SynTree* st) {
-	if( la.d_type == Tok_default ) {
-		expect(Tok_default, "default_specifier");
+	if( la.d_code == Tok_default ) {
+		expect(Tok_default, true, "default_specifier");
 		if( FIRST_constant(la.d_type) ) {
 			constant(st);
 		}
-	} else if( la.d_type == Tok_nodefault ) {
-		expect(Tok_nodefault, "default_specifier");
+	} else if( la.d_code == Tok_nodefault ) {
+		expect(Tok_nodefault, true, "default_specifier");
 	} else
 		invalid("default_specifier");
 }
 
 void Parser::field_or_function(SynTree* st) {
-	identifier(st);
+	designator(st);
 }
 
 void Parser::field_or_procedure(SynTree* st) {
-	identifier(st);
+	designator(st);
 }
 
 void Parser::object_type(SynTree* st) {
-	expect(Tok_object, "object_type");
-	if( la.d_type == Tok_abstract || la.d_type == Tok_sealed ) {
-		if( la.d_type == Tok_abstract ) {
-			expect(Tok_abstract, "object_type");
-		} else if( la.d_type == Tok_sealed ) {
-			expect(Tok_sealed, "object_type");
+	expect(Tok_object, false, "object_type");
+	if( la.d_code == Tok_abstract || la.d_code == Tok_sealed ) {
+		if( la.d_code == Tok_abstract ) {
+			expect(Tok_abstract, true, "object_type");
+		} else if( la.d_code == Tok_sealed ) {
+			expect(Tok_sealed, true, "object_type");
 		} else
 			invalid("object_type");
 	}
 	if( FIRST_heritage(la.d_type) ) {
 		heritage(st);
 	}
-	while( FIRST_component_list(la.d_type) ) {
+	while( FIRST_component_list(la.d_type) || FIRST_component_list(la.d_code) ) {
 		component_list(st);
 	}
-	expect(Tok_end, "object_type");
+	expect(Tok_end, false, "object_type");
 }
 
 void Parser::heritage(SynTree* st) {
-	expect(Tok_Lpar, "heritage");
+	expect(Tok_Lpar, false, "heritage");
 	type_name(st);
-	expect(Tok_Rpar, "heritage");
+	expect(Tok_Rpar, false, "heritage");
 }
 
 void Parser::component_list(SynTree* st) {
-	if( FIRST_object_visibility_specifier(la.d_type) ) {
+	if( FIRST_object_visibility_specifier(la.d_type) || FIRST_object_visibility_specifier(la.d_code) ) {
 		object_visibility_specifier(st);
 	}
 	while( FIRST_const_definition(la.d_type) ) {
@@ -2408,144 +2447,138 @@ void Parser::component_list(SynTree* st) {
 void Parser::field_definition(SynTree* st) {
 	if( la.d_type == Tok_class || la.d_type == Tok_var ) {
 		if( la.d_type == Tok_class ) {
-			expect(Tok_class, "field_definition");
+			expect(Tok_class, false, "field_definition");
 		}
-		expect(Tok_var, "field_definition");
+		expect(Tok_var, false, "field_definition");
 	}
 	identifier_list(st);
-	expect(Tok_Colon, "field_definition");
+	expect(Tok_Colon, false, "field_definition");
 	type_(st);
-	expect(Tok_Semi, "field_definition");
-	if( la.d_type == Tok_static ) {
-		expect(Tok_static, "field_definition");
-		expect(Tok_Semi, "field_definition");
+	expect(Tok_Semi, false, "field_definition");
+	if( la.d_code == Tok_static ) {
+		expect(Tok_static, true, "field_definition");
+		expect(Tok_Semi, false, "field_definition");
 	}
 }
 
 void Parser::const_definition(SynTree* st) {
-	expect(Tok_const, "const_definition");
+	expect(Tok_const, false, "const_definition");
 	identifier(st);
-	expect(Tok_Eq, "const_definition");
+	expect(Tok_Eq, false, "const_definition");
 	constant_expression(st);
-	expect(Tok_Semi, "const_definition");
+	expect(Tok_Semi, false, "const_definition");
 }
 
 void Parser::object_visibility_specifier(SynTree* st) {
-	if( la.d_type == Tok_private ) {
-		expect(Tok_private, "object_visibility_specifier");
-	} else if( la.d_type == Tok_protected ) {
-		expect(Tok_protected, "object_visibility_specifier");
-	} else if( la.d_type == Tok_public ) {
-		expect(Tok_public, "object_visibility_specifier");
+	if( la.d_code == Tok_private ) {
+		expect(Tok_private, true, "object_visibility_specifier");
+	} else if( la.d_code == Tok_protected ) {
+		expect(Tok_protected, true, "object_visibility_specifier");
+	} else if( la.d_code == Tok_public ) {
+		expect(Tok_public, true, "object_visibility_specifier");
 	} else
 		invalid("object_visibility_specifier");
 }
 
 void Parser::constructor_declaration(SynTree* st) {
 	constructor_header(st);
-	expect(Tok_Semi, "constructor_declaration");
+	expect(Tok_Semi, false, "constructor_declaration");
 	subroutine_block(st);
-	expect(Tok_Semi, "constructor_declaration");
+	expect(Tok_Semi, false, "constructor_declaration");
 }
 
 void Parser::destructor_declaration(SynTree* st) {
 	destructor_header(st);
-	expect(Tok_Semi, "destructor_declaration");
+	expect(Tok_Semi, false, "destructor_declaration");
 	subroutine_block(st);
-	expect(Tok_Semi, "destructor_declaration");
+	expect(Tok_Semi, false, "destructor_declaration");
 }
 
 void Parser::constructor_header(SynTree* st) {
-	expect(Tok_constructor, "constructor_header");
-	identifier(st);
-	if( la.d_type == Tok_Dot ) {
-		expect(Tok_Dot, "constructor_header");
-		identifier(st);
-	}
+	expect(Tok_constructor, false, "constructor_header");
+	designator(st);
 	formal_parameter_list(st);
 }
 
 void Parser::destructor_header(SynTree* st) {
-	expect(Tok_destructor, "destructor_header");
-	identifier(st);
-	if( la.d_type == Tok_Dot ) {
-		expect(Tok_Dot, "destructor_header");
-		identifier(st);
-	}
+	expect(Tok_destructor, false, "destructor_header");
+	designator(st);
 	formal_parameter_list(st);
 }
 
 void Parser::method_definition(SynTree* st) {
 	if( la.d_type == Tok_class ) {
-		expect(Tok_class, "method_definition");
+		expect(Tok_class, false, "method_definition");
 	}
-	if( FIRST_func_proc_header(la.d_type) ) {
-		func_proc_header(st);
+	if( FIRST_function_header(la.d_type) ) {
+		function_header(st);
+	} else if( FIRST_procedure_header(la.d_type) ) {
+		procedure_header(st);
 	} else if( FIRST_constructor_header(la.d_type) ) {
 		constructor_header(st);
 	} else if( FIRST_destructor_header(la.d_type) ) {
 		destructor_header(st);
 	} else
 		invalid("method_definition");
-	expect(Tok_Semi, "method_definition");
+	expect(Tok_Semi, false, "method_definition");
 	method_directives(st);
 }
 
 void Parser::method_directives(SynTree* st) {
-	if( la.d_type == Tok_virtual ) {
-		expect(Tok_virtual, "method_directives");
-		expect(Tok_Semi, "method_directives");
-		if( la.d_type == Tok_abstract ) {
-			expect(Tok_abstract, "method_directives");
-			expect(Tok_Semi, "method_directives");
+	if( la.d_code == Tok_virtual ) {
+		expect(Tok_virtual, true, "method_directives");
+		expect(Tok_Semi, false, "method_directives");
+		if( la.d_code == Tok_abstract ) {
+			expect(Tok_abstract, true, "method_directives");
+			expect(Tok_Semi, false, "method_directives");
 		}
 	}
-	if( FIRST_call_modifiers(la.d_type) ) {
+	if( FIRST_call_modifiers(la.d_type) || FIRST_call_modifiers(la.d_code) ) {
 		call_modifiers(st);
-		expect(Tok_Semi, "method_directives");
+		expect(Tok_Semi, false, "method_directives");
 	}
 }
 
 void Parser::class_type(SynTree* st) {
-	expect(Tok_class, "class_type");
-	if( la.d_type == Tok_abstract || la.d_type == Tok_sealed || FIRST_heritage2(la.d_type) || FIRST_component_list2(la.d_type) || la.d_type == Tok_end ) {
-		if( la.d_type == Tok_abstract || la.d_type == Tok_sealed ) {
-			if( la.d_type == Tok_abstract ) {
-				expect(Tok_abstract, "class_type");
-			} else if( la.d_type == Tok_sealed ) {
-				expect(Tok_sealed, "class_type");
+	expect(Tok_class, false, "class_type");
+	if( la.d_code == Tok_abstract || la.d_code == Tok_sealed || FIRST_heritage2(la.d_type) || FIRST_component_list2(la.d_type) || FIRST_component_list2(la.d_code) || la.d_type == Tok_end ) {
+		if( la.d_code == Tok_abstract || la.d_code == Tok_sealed ) {
+			if( la.d_code == Tok_abstract ) {
+				expect(Tok_abstract, true, "class_type");
+			} else if( la.d_code == Tok_sealed ) {
+				expect(Tok_sealed, true, "class_type");
 			} else
 				invalid("class_type");
 		}
 		if( FIRST_heritage2(la.d_type) ) {
 			heritage2(st);
 		}
-		while( FIRST_component_list2(la.d_type) ) {
+		while( FIRST_component_list2(la.d_type) || FIRST_component_list2(la.d_code) ) {
 			component_list2(st);
 		}
-		expect(Tok_end, "class_type");
+		expect(Tok_end, false, "class_type");
 	}
 }
 
 void Parser::heritage2(SynTree* st) {
-	expect(Tok_Lpar, "heritage2");
+	expect(Tok_Lpar, false, "heritage2");
 	type_name(st);
 	implemented_interfaces(st);
-	expect(Tok_Rpar, "heritage2");
+	expect(Tok_Rpar, false, "heritage2");
 }
 
 void Parser::implemented_interfaces(SynTree* st) {
 	while( la.d_type == Tok_Comma ) {
-		expect(Tok_Comma, "implemented_interfaces");
+		expect(Tok_Comma, false, "implemented_interfaces");
 		identifier(st);
 	}
 }
 
 void Parser::component_list2(SynTree* st) {
-	if( FIRST_class_visibility_specifier(la.d_type) ) {
+	if( FIRST_class_visibility_specifier(la.d_type) || FIRST_class_visibility_specifier(la.d_code) ) {
 		class_visibility_specifier(st);
 	}
-	while( FIRST_field_definition2(la.d_type) ) {
+	while( ( peek(1).d_type == Tok_ident && !( ( peek(1).d_code == Tok_public || peek(1).d_code == Tok_published || peek(1).d_code == Tok_strict || peek(1).d_code == Tok_private || peek(1).d_code == Tok_protected ) ) )  ) {
 		field_definition2(st);
 	}
 	while( FIRST_class_part(la.d_type) ) {
@@ -2560,7 +2593,7 @@ void Parser::class_part(SynTree* st) {
 		type_declaration_part(st);
 	} else if( la.d_type == Tok_class || FIRST_variable_declaration_part(la.d_type) || FIRST_method_definition2(la.d_type) || FIRST_property_definition2(la.d_type) ) {
 		if( la.d_type == Tok_class ) {
-			expect(Tok_class, "class_part");
+			expect(Tok_class, false, "class_part");
 		}
 		if( FIRST_variable_declaration_part(la.d_type) ) {
 			variable_declaration_part(st);
@@ -2575,18 +2608,18 @@ void Parser::class_part(SynTree* st) {
 }
 
 void Parser::class_visibility_specifier(SynTree* st) {
-	if( la.d_type == Tok_public ) {
-		expect(Tok_public, "class_visibility_specifier");
-	} else if( la.d_type == Tok_published ) {
-		expect(Tok_published, "class_visibility_specifier");
-	} else if( la.d_type == Tok_strict || la.d_type == Tok_private || la.d_type == Tok_protected ) {
-		if( la.d_type == Tok_strict ) {
-			expect(Tok_strict, "class_visibility_specifier");
+	if( la.d_code == Tok_public ) {
+		expect(Tok_public, true, "class_visibility_specifier");
+	} else if( la.d_code == Tok_published ) {
+		expect(Tok_published, true, "class_visibility_specifier");
+	} else if( la.d_code == Tok_strict || la.d_code == Tok_private || la.d_code == Tok_protected ) {
+		if( la.d_code == Tok_strict ) {
+			expect(Tok_strict, true, "class_visibility_specifier");
 		}
-		if( la.d_type == Tok_private ) {
-			expect(Tok_private, "class_visibility_specifier");
-		} else if( la.d_type == Tok_protected ) {
-			expect(Tok_protected, "class_visibility_specifier");
+		if( la.d_code == Tok_private ) {
+			expect(Tok_private, true, "class_visibility_specifier");
+		} else if( la.d_code == Tok_protected ) {
+			expect(Tok_protected, true, "class_visibility_specifier");
 		} else
 			invalid("class_visibility_specifier");
 	} else
@@ -2594,48 +2627,50 @@ void Parser::class_visibility_specifier(SynTree* st) {
 }
 
 void Parser::method_definition2(SynTree* st) {
-	if( FIRST_func_proc_header(la.d_type) ) {
-		func_proc_header(st);
+	if( FIRST_function_header(la.d_type) ) {
+		function_header(st);
+	} else if( FIRST_procedure_header(la.d_type) ) {
+		procedure_header(st);
 	} else if( FIRST_constructor_header(la.d_type) ) {
 		constructor_header(st);
 	} else if( FIRST_destructor_header(la.d_type) ) {
 		destructor_header(st);
 	} else
 		invalid("method_definition2");
-	expect(Tok_Semi, "method_definition2");
-	if( FIRST_method_directives2(la.d_type) ) {
+	expect(Tok_Semi, false, "method_definition2");
+	if( FIRST_method_directives2(la.d_type) || FIRST_method_directives2(la.d_code) ) {
 		method_directives2(st);
-		expect(Tok_Semi, "method_definition2");
+		expect(Tok_Semi, false, "method_definition2");
 	}
-	if( FIRST_call_modifiers(la.d_type) ) {
+	if( FIRST_call_modifiers(la.d_type) || FIRST_call_modifiers(la.d_code) ) {
 		call_modifiers(st);
-		expect(Tok_Semi, "method_definition2");
+		expect(Tok_Semi, false, "method_definition2");
 	}
 }
 
 void Parser::method_directives2(SynTree* st) {
-	if( la.d_type == Tok_virtual || la.d_type == Tok_dynamic ) {
-		if( la.d_type == Tok_virtual ) {
-			expect(Tok_virtual, "method_directives2");
-		} else if( la.d_type == Tok_dynamic ) {
-			expect(Tok_dynamic, "method_directives2");
+	if( la.d_code == Tok_virtual || la.d_code == Tok_dynamic ) {
+		if( la.d_code == Tok_virtual ) {
+			expect(Tok_virtual, true, "method_directives2");
+		} else if( la.d_code == Tok_dynamic ) {
+			expect(Tok_dynamic, true, "method_directives2");
 		} else
 			invalid("method_directives2");
-		if( ( peek(1) == Tok_Semi && ( peek(2) == Tok_abstract || peek(2) == Tok_reintroduce ) )  ) {
-			expect(Tok_Semi, "method_directives2");
-			if( la.d_type == Tok_abstract ) {
-				expect(Tok_abstract, "method_directives2");
-			} else if( la.d_type == Tok_reintroduce ) {
-				expect(Tok_reintroduce, "method_directives2");
+		if( ( peek(1).d_type == Tok_Semi && ( peek(2).d_code == Tok_abstract || peek(2).d_code == Tok_reintroduce ) )  ) {
+			expect(Tok_Semi, false, "method_directives2");
+			if( la.d_code == Tok_abstract ) {
+				expect(Tok_abstract, true, "method_directives2");
+			} else if( la.d_code == Tok_reintroduce ) {
+				expect(Tok_reintroduce, true, "method_directives2");
 			} else
 				invalid("method_directives2");
 		}
-	} else if( la.d_type == Tok_override ) {
-		expect(Tok_override, "method_directives2");
-	} else if( la.d_type == Tok_reintroduce ) {
-		expect(Tok_reintroduce, "method_directives2");
-	} else if( la.d_type == Tok_message ) {
-		expect(Tok_message, "method_directives2");
+	} else if( la.d_code == Tok_override ) {
+		expect(Tok_override, true, "method_directives2");
+	} else if( la.d_code == Tok_reintroduce ) {
+		expect(Tok_reintroduce, true, "method_directives2");
+	} else if( la.d_code == Tok_message ) {
+		expect(Tok_message, true, "method_directives2");
 		if( FIRST_integer_constant(la.d_type) ) {
 			integer_constant(st);
 		} else if( FIRST_string_constant(la.d_type) ) {
@@ -2648,110 +2683,111 @@ void Parser::method_directives2(SynTree* st) {
 
 void Parser::field_definition2(SynTree* st) {
 	identifier_list(st);
-	expect(Tok_Colon, "field_definition2");
+	expect(Tok_Colon, false, "field_definition2");
 	type_(st);
-	expect(Tok_Semi, "field_definition2");
-	if( la.d_type == Tok_static ) {
-		expect(Tok_static, "field_definition2");
-		expect(Tok_Semi, "field_definition2");
+	expect(Tok_Semi, false, "field_definition2");
+	if( la.d_code == Tok_static ) {
+		expect(Tok_static, true, "field_definition2");
+		expect(Tok_Semi, false, "field_definition2");
 	}
 }
 
 void Parser::property_definition2(SynTree* st) {
-	expect(Tok_property, "property_definition2");
+	expect(Tok_property, false, "property_definition2");
 	identifier(st);
 	if( FIRST_property_interface(la.d_type) ) {
 		property_interface(st);
 	}
 	property_specifiers2(st);
-	if( FIRST_hintdirectives(la.d_type) ) {
+	if( FIRST_hintdirectives(la.d_type) || FIRST_hintdirectives(la.d_code) ) {
 		hintdirectives(st);
 	}
+	expect(Tok_Semi, false, "property_definition2");
 }
 
 void Parser::property_specifiers2(SynTree* st) {
-	if( FIRST_read_specifier(la.d_type) ) {
+	if( FIRST_read_specifier(la.d_type) || FIRST_read_specifier(la.d_code) ) {
 		read_specifier(st);
 	}
-	if( FIRST_write_specifier(la.d_type) || FIRST_implements_specifier(la.d_type) ) {
-		if( FIRST_write_specifier(la.d_type) ) {
+	if( FIRST_write_specifier(la.d_type) || FIRST_write_specifier(la.d_code) || FIRST_implements_specifier(la.d_type) || FIRST_implements_specifier(la.d_code) ) {
+		if( FIRST_write_specifier(la.d_type) || FIRST_write_specifier(la.d_code) ) {
 			write_specifier(st);
-		} else if( FIRST_implements_specifier(la.d_type) ) {
+		} else if( FIRST_implements_specifier(la.d_type) || FIRST_implements_specifier(la.d_code) ) {
 			implements_specifier(st);
 		} else
 			invalid("property_specifiers2");
 	}
-	if( FIRST_default_specifier(la.d_type) ) {
+	if( FIRST_default_specifier(la.d_type) || FIRST_default_specifier(la.d_code) ) {
 		default_specifier(st);
 	}
-	if( FIRST_stored_specifier(la.d_type) ) {
+	if( FIRST_stored_specifier(la.d_type) || FIRST_stored_specifier(la.d_code) ) {
 		stored_specifier(st);
 	}
-	if( FIRST_defaultarraypropertyspecifier(la.d_type) ) {
+	if( ( peek(1).d_type == Tok_Semi && peek(2).d_code == Tok_default )  ) {
 		defaultarraypropertyspecifier(st);
 	}
 }
 
 void Parser::implements_specifier(SynTree* st) {
-	expect(Tok_implements, "implements_specifier");
+	expect(Tok_implements, true, "implements_specifier");
 	identifier(st);
 	while( la.d_type == Tok_Comma ) {
-		expect(Tok_Comma, "implements_specifier");
+		expect(Tok_Comma, false, "implements_specifier");
 		identifier(st);
 	}
 }
 
 void Parser::stored_specifier(SynTree* st) {
-	expect(Tok_stored, "stored_specifier");
+	expect(Tok_stored, true, "stored_specifier");
 	constant(st);
 }
 
 void Parser::defaultarraypropertyspecifier(SynTree* st) {
-	expect(Tok_Semi, "defaultarraypropertyspecifier");
-	expect(Tok_default, "defaultarraypropertyspecifier");
+	expect(Tok_Semi, false, "defaultarraypropertyspecifier");
+	expect(Tok_default, true, "defaultarraypropertyspecifier");
 }
 
 void Parser::interface_type(SynTree* st) {
-	expect(Tok_interface, "interface_type");
+	expect(Tok_interface, false, "interface_type");
 	if( FIRST_heritage(la.d_type) ) {
 		heritage(st);
 	}
 	if( FIRST_guid(la.d_type) ) {
 		guid(st);
 	}
-	while( FIRST_component_list2(la.d_type) ) {
+	while( FIRST_component_list2(la.d_type) || FIRST_component_list2(la.d_code) ) {
 		component_list2(st);
 	}
-	expect(Tok_end, "interface_type");
+	expect(Tok_end, false, "interface_type");
 }
 
 void Parser::guid(SynTree* st) {
-	expect(Tok_Lbrack, "guid");
+	expect(Tok_Lbrack, false, "guid");
 	string_constant(st);
-	expect(Tok_Rbrack, "guid");
+	expect(Tok_Rbrack, false, "guid");
 }
 
 void Parser::class_reference_type(SynTree* st) {
-	expect(Tok_class, "class_reference_type");
-	expect(Tok_of, "class_reference_type");
+	expect(Tok_class, false, "class_reference_type");
+	expect(Tok_of, false, "class_reference_type");
 	type_name(st);
 }
 
 void Parser::generic_type(SynTree* st) {
-	expect(Tok_generic, "generic_type");
+	expect(Tok_generic, true, "generic_type");
 	identifier(st);
-	expect(Tok_Lt, "generic_type");
+	expect(Tok_Lt, false, "generic_type");
 	template_list(st);
-	expect(Tok_Gt, "generic_type");
-	expect(Tok_Eq, "generic_type");
+	expect(Tok_Gt, false, "generic_type");
+	expect(Tok_Eq, false, "generic_type");
 	generic_type_(st);
-	expect(Tok_Semi, "generic_type");
+	expect(Tok_Semi, false, "generic_type");
 }
 
 void Parser::template_list(SynTree* st) {
 	identifier_list2(st);
 	while( la.d_type == Tok_Semi ) {
-		expect(Tok_Semi, "template_list");
+		expect(Tok_Semi, false, "template_list");
 		identifier_list2(st);
 	}
 }
@@ -2759,21 +2795,21 @@ void Parser::template_list(SynTree* st) {
 void Parser::identifier_list2(SynTree* st) {
 	identifier_list(st);
 	if( la.d_type == Tok_Colon ) {
-		expect(Tok_Colon, "identifier_list2");
+		expect(Tok_Colon, false, "identifier_list2");
 		if( FIRST_type_name(la.d_type) ) {
 			type_name(st);
 			while( la.d_type == Tok_Comma ) {
-				expect(Tok_Comma, "identifier_list2");
+				expect(Tok_Comma, false, "identifier_list2");
 				type_name(st);
 			}
 		} else if( la.d_type == Tok_class ) {
-			expect(Tok_class, "identifier_list2");
+			expect(Tok_class, false, "identifier_list2");
 		} else if( la.d_type == Tok_interface ) {
-			expect(Tok_interface, "identifier_list2");
+			expect(Tok_interface, false, "identifier_list2");
 		} else if( la.d_type == Tok_object ) {
-			expect(Tok_object, "identifier_list2");
+			expect(Tok_object, false, "identifier_list2");
 		} else if( la.d_type == Tok_record ) {
-			expect(Tok_record, "identifier_list2");
+			expect(Tok_record, false, "identifier_list2");
 		} else
 			invalid("identifier_list2");
 	}
@@ -2797,44 +2833,44 @@ void Parser::generic_type_(SynTree* st) {
 }
 
 void Parser::specialized_type(SynTree* st) {
-	expect(Tok_specialize, "specialized_type");
+	expect(Tok_specialize, true, "specialized_type");
 	identifier(st);
-	expect(Tok_Lt, "specialized_type");
+	expect(Tok_Lt, false, "specialized_type");
 	type_name_list(st);
-	expect(Tok_Gt, "specialized_type");
+	expect(Tok_Gt, false, "specialized_type");
 }
 
 void Parser::type_name_list(SynTree* st) {
 	type_name(st);
 	while( la.d_type == Tok_Comma ) {
-		expect(Tok_Comma, "type_name_list");
+		expect(Tok_Comma, false, "type_name_list");
 		type_name(st);
 	}
 }
 
 void Parser::helper_type(SynTree* st) {
 	if( la.d_type == Tok_class ) {
-		expect(Tok_class, "helper_type");
+		expect(Tok_class, false, "helper_type");
 	} else if( la.d_type == Tok_record ) {
-		expect(Tok_record, "helper_type");
+		expect(Tok_record, false, "helper_type");
 	} else if( la.d_type == Tok_type ) {
-		expect(Tok_type, "helper_type");
+		expect(Tok_type, false, "helper_type");
 	} else
 		invalid("helper_type");
-	expect(Tok_helper, "helper_type");
+	expect(Tok_helper, true, "helper_type");
 	if( la.d_type == Tok_Lpar ) {
-		expect(Tok_Lpar, "helper_type");
+		expect(Tok_Lpar, false, "helper_type");
 		base_helper(st);
-		expect(Tok_Rpar, "helper_type");
+		expect(Tok_Rpar, false, "helper_type");
 	}
-	expect(Tok_for, "helper_type");
+	expect(Tok_for, false, "helper_type");
 	identifier(st);
 	helper_component_list(st);
 	while( FIRST_helper_component_list(la.d_type) ) {
 		helper_component_list(st);
 	}
-	expect(Tok_end, "helper_type");
-	if( FIRST_hintdirectives(la.d_type) ) {
+	expect(Tok_end, false, "helper_type");
+	if( FIRST_hintdirectives(la.d_type) || FIRST_hintdirectives(la.d_code) ) {
 		hintdirectives(st);
 	}
 }
@@ -2858,21 +2894,21 @@ void Parser::expression(SynTree* st) {
 
 void Parser::relop(SynTree* st) {
 	if( la.d_type == Tok_Lt ) {
-		expect(Tok_Lt, "relop");
+		expect(Tok_Lt, false, "relop");
 	} else if( la.d_type == Tok_Leq ) {
-		expect(Tok_Leq, "relop");
+		expect(Tok_Leq, false, "relop");
 	} else if( la.d_type == Tok_Gt ) {
-		expect(Tok_Gt, "relop");
+		expect(Tok_Gt, false, "relop");
 	} else if( la.d_type == Tok_Geq ) {
-		expect(Tok_Geq, "relop");
+		expect(Tok_Geq, false, "relop");
 	} else if( la.d_type == Tok_Eq ) {
-		expect(Tok_Eq, "relop");
+		expect(Tok_Eq, false, "relop");
 	} else if( la.d_type == Tok_LtGt ) {
-		expect(Tok_LtGt, "relop");
+		expect(Tok_LtGt, false, "relop");
 	} else if( la.d_type == Tok_in ) {
-		expect(Tok_in, "relop");
+		expect(Tok_in, false, "relop");
 	} else if( la.d_type == Tok_is ) {
-		expect(Tok_is, "relop");
+		expect(Tok_is, false, "relop");
 	} else
 		invalid("relop");
 }
@@ -2887,13 +2923,13 @@ void Parser::simple_expression(SynTree* st) {
 
 void Parser::adop(SynTree* st) {
 	if( la.d_type == Tok_Plus ) {
-		expect(Tok_Plus, "adop");
+		expect(Tok_Plus, false, "adop");
 	} else if( la.d_type == Tok_Minus ) {
-		expect(Tok_Minus, "adop");
+		expect(Tok_Minus, false, "adop");
 	} else if( la.d_type == Tok_or ) {
-		expect(Tok_or, "adop");
+		expect(Tok_or, false, "adop");
 	} else if( la.d_type == Tok_xor ) {
-		expect(Tok_xor, "adop");
+		expect(Tok_xor, false, "adop");
 	} else
 		invalid("adop");
 }
@@ -2908,36 +2944,36 @@ void Parser::term(SynTree* st) {
 
 void Parser::mulop(SynTree* st) {
 	if( la.d_type == Tok_Star ) {
-		expect(Tok_Star, "mulop");
+		expect(Tok_Star, false, "mulop");
 	} else if( la.d_type == Tok_Slash ) {
-		expect(Tok_Slash, "mulop");
+		expect(Tok_Slash, false, "mulop");
 	} else if( la.d_type == Tok_div ) {
-		expect(Tok_div, "mulop");
+		expect(Tok_div, false, "mulop");
 	} else if( la.d_type == Tok_mod ) {
-		expect(Tok_mod, "mulop");
+		expect(Tok_mod, false, "mulop");
 	} else if( la.d_type == Tok_and ) {
-		expect(Tok_and, "mulop");
+		expect(Tok_and, false, "mulop");
 	} else if( la.d_type == Tok_shl ) {
-		expect(Tok_shl, "mulop");
+		expect(Tok_shl, false, "mulop");
 	} else if( la.d_type == Tok_shr ) {
-		expect(Tok_shr, "mulop");
+		expect(Tok_shr, false, "mulop");
 	} else if( la.d_type == Tok_as ) {
-		expect(Tok_as, "mulop");
+		expect(Tok_as, false, "mulop");
 	} else
 		invalid("mulop");
 }
 
 void Parser::factor(SynTree* st) {
 	if( la.d_type == Tok_Lpar ) {
-		expect(Tok_Lpar, "factor");
+		expect(Tok_Lpar, false, "factor");
 		expression(st);
-		expect(Tok_Rpar, "factor");
+		expect(Tok_Rpar, false, "factor");
 	} else if( FIRST_varref_or_funcall_or_constid_or_cast(la.d_type) ) {
 		varref_or_funcall_or_constid_or_cast(st);
 	} else if( FIRST_unsigned_constant(la.d_type) ) {
 		unsigned_constant(st);
 	} else if( la.d_type == Tok_not ) {
-		expect(Tok_not, "factor");
+		expect(Tok_not, false, "factor");
 		factor(st);
 	} else if( FIRST_sign(la.d_type) ) {
 		sign(st);
@@ -2946,7 +2982,7 @@ void Parser::factor(SynTree* st) {
 		set_constructor(st);
 	} else if( FIRST_address_factor(la.d_type) ) {
 		address_factor(st);
-	} else if( FIRST_inherited_call(la.d_type) ) {
+	} else if( FIRST_inherited_call(la.d_type) || FIRST_inherited_call(la.d_code) ) {
 		inherited_call(st);
 	} else
 		invalid("factor");
@@ -2954,9 +2990,6 @@ void Parser::factor(SynTree* st) {
 
 void Parser::varref_or_funcall_or_constid_or_cast(SynTree* st) {
 	selector(st);
-	if( FIRST_actual_parameter_list(la.d_type) ) {
-		actual_parameter_list(st);
-	}
 }
 
 void Parser::unsigned_constant(SynTree* st) {
@@ -2965,59 +2998,55 @@ void Parser::unsigned_constant(SynTree* st) {
 	} else if( FIRST_character_string(la.d_type) ) {
 		character_string(st);
 	} else if( la.d_type == Tok_nil ) {
-		expect(Tok_nil, "unsigned_constant");
+		expect(Tok_nil, false, "unsigned_constant");
 	} else
 		invalid("unsigned_constant");
 }
 
 void Parser::sign(SynTree* st) {
 	if( la.d_type == Tok_Plus ) {
-		expect(Tok_Plus, "sign");
+		expect(Tok_Plus, false, "sign");
 	} else if( la.d_type == Tok_Minus ) {
-		expect(Tok_Minus, "sign");
+		expect(Tok_Minus, false, "sign");
 	} else
 		invalid("sign");
 }
 
 void Parser::actual_parameter_list(SynTree* st) {
-	expect(Tok_Lpar, "actual_parameter_list");
-	if( FIRST_expression(la.d_type) ) {
+	expect(Tok_Lpar, false, "actual_parameter_list");
+	if( FIRST_expression(la.d_type) || FIRST_expression(la.d_code) ) {
 		expression(st);
 		while( la.d_type == Tok_Comma ) {
-			expect(Tok_Comma, "actual_parameter_list");
+			expect(Tok_Comma, false, "actual_parameter_list");
 			expression(st);
 		}
 	}
-	expect(Tok_Rpar, "actual_parameter_list");
+	expect(Tok_Rpar, false, "actual_parameter_list");
 }
 
 void Parser::set_constructor(SynTree* st) {
-	expect(Tok_Lbrack, "set_constructor");
-	if( FIRST_set_group(la.d_type) ) {
+	expect(Tok_Lbrack, false, "set_constructor");
+	if( FIRST_set_group(la.d_type) || FIRST_set_group(la.d_code) ) {
 		set_group(st);
 		while( la.d_type == Tok_Comma ) {
-			expect(Tok_Comma, "set_constructor");
+			expect(Tok_Comma, false, "set_constructor");
 			set_group(st);
 		}
 	}
-	expect(Tok_Rbrack, "set_constructor");
+	expect(Tok_Rbrack, false, "set_constructor");
 }
 
 void Parser::set_group(SynTree* st) {
 	expression(st);
 	if( la.d_type == Tok_2Dot ) {
-		expect(Tok_2Dot, "set_group");
+		expect(Tok_2Dot, false, "set_group");
 		expression(st);
 	}
 }
 
 void Parser::address_factor(SynTree* st) {
-	expect(Tok_At, "address_factor");
-	identifier(st);
-	if( la.d_type == Tok_Dot ) {
-		expect(Tok_Dot, "address_factor");
-		identifier(st);
-	}
+	expect(Tok_At, false, "address_factor");
+	selector(st);
 }
 
 void Parser::constant_expression(SynTree* st) {
@@ -3025,12 +3054,12 @@ void Parser::constant_expression(SynTree* st) {
 }
 
 void Parser::statement(SynTree* st) {
-	if( ( ( peek(1) == Tok_decimal_int || peek(1) == Tok_ident ) && peek(2) == Tok_Colon )  ) {
+	if( ( ( peek(1).d_type == Tok_decimal_int || peek(1).d_type == Tok_ident ) && peek(2).d_type == Tok_Colon )  ) {
 		label_def(st);
-		expect(Tok_Colon, "statement");
+		expect(Tok_Colon, false, "statement");
 	}
-	if( FIRST_simple_statement(la.d_type) || FIRST_structured_statement(la.d_type) || FIRST_asm_statement(la.d_type) ) {
-		if( FIRST_simple_statement(la.d_type) ) {
+	if( FIRST_simple_statement(la.d_type) || FIRST_simple_statement(la.d_code) || FIRST_structured_statement(la.d_type) || FIRST_asm_statement(la.d_type) ) {
+		if( FIRST_simple_statement(la.d_type) || FIRST_simple_statement(la.d_code) ) {
 			simple_statement(st);
 		} else if( FIRST_structured_statement(la.d_type) ) {
 			structured_statement(st);
@@ -3042,7 +3071,7 @@ void Parser::statement(SynTree* st) {
 }
 
 void Parser::simple_statement(SynTree* st) {
-	if( FIRST_inherited_call(la.d_type) ) {
+	if( FIRST_inherited_call(la.d_type) || FIRST_inherited_call(la.d_code) ) {
 		inherited_call(st);
 	} else if( FIRST_assig_or_call(la.d_type) ) {
 		assig_or_call(st);
@@ -3055,20 +3084,15 @@ void Parser::simple_statement(SynTree* st) {
 }
 
 void Parser::assig_or_call(SynTree* st) {
-	variable_reference(st);
+	selector(st);
 	if( FIRST_assigop(la.d_type) ) {
 		assigop(st);
 		expression(st);
-	} else if( FIRST_actual_parameter_list(la.d_type) ) {
-		if( FIRST_actual_parameter_list(la.d_type) ) {
-			actual_parameter_list(st);
-		}
-	} else
-		invalid("assig_or_call");
+	}
 }
 
 void Parser::inherited_call(SynTree* st) {
-	expect(Tok_inherited, "inherited_call");
+	expect(Tok_inherited, true, "inherited_call");
 	if( FIRST_identifier(la.d_type) ) {
 		identifier(st);
 		if( FIRST_actual_parameter_list(la.d_type) ) {
@@ -3079,21 +3103,21 @@ void Parser::inherited_call(SynTree* st) {
 
 void Parser::assigop(SynTree* st) {
 	if( la.d_type == Tok_ColonEq ) {
-		expect(Tok_ColonEq, "assigop");
+		expect(Tok_ColonEq, false, "assigop");
 	} else if( la.d_type == Tok_PlusEq ) {
-		expect(Tok_PlusEq, "assigop");
+		expect(Tok_PlusEq, false, "assigop");
 	} else if( la.d_type == Tok_MinusEq ) {
-		expect(Tok_MinusEq, "assigop");
+		expect(Tok_MinusEq, false, "assigop");
 	} else if( la.d_type == Tok_StarEq ) {
-		expect(Tok_StarEq, "assigop");
+		expect(Tok_StarEq, false, "assigop");
 	} else if( la.d_type == Tok_SlashEq ) {
-		expect(Tok_SlashEq, "assigop");
+		expect(Tok_SlashEq, false, "assigop");
 	} else
 		invalid("assigop");
 }
 
 void Parser::goto_statement(SynTree* st) {
-	expect(Tok_goto, "goto_statement");
+	expect(Tok_goto, false, "goto_statement");
 	label_def(st);
 }
 
@@ -3133,99 +3157,100 @@ void Parser::repetitive_statement(SynTree* st) {
 }
 
 void Parser::compound_statement(SynTree* st) {
-	expect(Tok_begin, "compound_statement");
+	expect(Tok_begin, false, "compound_statement");
 	statement(st);
 	while( la.d_type == Tok_Semi ) {
-		expect(Tok_Semi, "compound_statement");
+		expect(Tok_Semi, false, "compound_statement");
 		statement(st);
 	}
-	expect(Tok_end, "compound_statement");
+	expect(Tok_end, false, "compound_statement");
 }
 
 void Parser::statement_list(SynTree* st) {
 	statement(st);
-	while( ( peek(1) == Tok_Semi && ( peek(2) == Tok_asm || peek(2) == Tok_begin || peek(2) == Tok_case || peek(2) == Tok_decimal_int || peek(2) == Tok_for || peek(2) == Tok_goto || peek(2) == Tok_ident || peek(2) == Tok_if || peek(2) == Tok_inherited || peek(2) == Tok_raise || peek(2) == Tok_repeat || peek(2) == Tok_try || peek(2) == Tok_while || peek(2) == Tok_with ) )  ) {
-		expect(Tok_Semi, "statement_list");
-		statement(st);
+	while( la.d_type == Tok_Semi ) {
+		expect(Tok_Semi, false, "statement_list");
+		if( FIRST_statement(la.d_type) || FIRST_statement(la.d_code) ) {
+			statement(st);
+		}
 	}
 }
 
 void Parser::case_statement(SynTree* st) {
-	expect(Tok_case, "case_statement");
+	expect(Tok_case, false, "case_statement");
 	expression(st);
-	expect(Tok_of, "case_statement");
+	expect(Tok_of, false, "case_statement");
 	case_part(st);
-	while( ( peek(1) == Tok_Semi && ( peek(2) == Tok_binary_int || peek(2) == Tok_decimal_int || peek(2) == Tok_Hash || peek(2) == Tok_hex_int || peek(2) == Tok_ident || peek(2) == Tok_octal_int || peek(2) == Tok_quoted_string || peek(2) == Tok_unsigned_real ) )  ) {
-		expect(Tok_Semi, "case_statement");
-		case_part(st);
+	while( la.d_type == Tok_Semi ) {
+		expect(Tok_Semi, false, "case_statement");
+		if( FIRST_case_part(la.d_type) || FIRST_case_part(la.d_code) ) {
+			case_part(st);
+		}
 	}
-	if( FIRST_else_part(la.d_type) ) {
+	if( FIRST_else_part(la.d_type) || FIRST_else_part(la.d_code) ) {
 		else_part(st);
 	}
-	if( la.d_type == Tok_Semi ) {
-		expect(Tok_Semi, "case_statement");
-	}
-	expect(Tok_end, "case_statement");
+	expect(Tok_end, false, "case_statement");
 }
 
 void Parser::case_part(SynTree* st) {
 	case_range(st);
 	while( la.d_type == Tok_Comma ) {
-		expect(Tok_Comma, "case_part");
+		expect(Tok_Comma, false, "case_part");
 		case_range(st);
 	}
-	expect(Tok_Colon, "case_part");
+	expect(Tok_Colon, false, "case_part");
 	statement(st);
 }
 
 void Parser::case_range(SynTree* st) {
-	constant(st);
+	constant_expression(st);
 	if( la.d_type == Tok_2Dot ) {
-		expect(Tok_2Dot, "case_range");
-		constant(st);
+		expect(Tok_2Dot, false, "case_range");
+		constant_expression(st);
 	}
 }
 
 void Parser::else_part(SynTree* st) {
 	if( la.d_type == Tok_else ) {
-		expect(Tok_else, "else_part");
-	} else if( la.d_type == Tok_otherwise ) {
-		expect(Tok_otherwise, "else_part");
+		expect(Tok_else, false, "else_part");
+	} else if( la.d_code == Tok_otherwise ) {
+		expect(Tok_otherwise, true, "else_part");
 	} else
 		invalid("else_part");
 	statement_list(st);
 }
 
 void Parser::if_statement(SynTree* st) {
-	expect(Tok_if, "if_statement");
+	expect(Tok_if, false, "if_statement");
 	expression(st);
-	expect(Tok_then, "if_statement");
+	expect(Tok_then, false, "if_statement");
 	statement(st);
 	if( la.d_type == Tok_else ) {
-		expect(Tok_else, "if_statement");
+		expect(Tok_else, false, "if_statement");
 		statement(st);
 	}
 }
 
 void Parser::for_statement(SynTree* st) {
-	expect(Tok_for, "for_statement");
+	expect(Tok_for, false, "for_statement");
 	control_variable(st);
 	if( la.d_type == Tok_ColonEq ) {
-		expect(Tok_ColonEq, "for_statement");
+		expect(Tok_ColonEq, false, "for_statement");
 		initial_value(st);
 		if( la.d_type == Tok_to ) {
-			expect(Tok_to, "for_statement");
+			expect(Tok_to, false, "for_statement");
 		} else if( la.d_type == Tok_downto ) {
-			expect(Tok_downto, "for_statement");
+			expect(Tok_downto, false, "for_statement");
 		} else
 			invalid("for_statement");
 		final_value(st);
 	} else if( la.d_type == Tok_in ) {
-		expect(Tok_in, "for_statement");
+		expect(Tok_in, false, "for_statement");
 		enumerable(st);
 	} else
 		invalid("for_statement");
-	expect(Tok_do, "for_statement");
+	expect(Tok_do, false, "for_statement");
 	statement(st);
 }
 
@@ -3253,115 +3278,110 @@ void Parser::enumerable(SynTree* st) {
 }
 
 void Parser::repeat_statement(SynTree* st) {
-	expect(Tok_repeat, "repeat_statement");
+	expect(Tok_repeat, false, "repeat_statement");
 	statement_list(st);
-	expect(Tok_until, "repeat_statement");
+	expect(Tok_until, false, "repeat_statement");
 	expression(st);
 }
 
 void Parser::while_statement(SynTree* st) {
-	expect(Tok_while, "while_statement");
+	expect(Tok_while, false, "while_statement");
 	expression(st);
-	expect(Tok_do, "while_statement");
+	expect(Tok_do, false, "while_statement");
 	statement(st);
 }
 
 void Parser::with_statement(SynTree* st) {
-	expect(Tok_with, "with_statement");
+	expect(Tok_with, false, "with_statement");
 	variable_reference(st);
 	while( la.d_type == Tok_Comma ) {
-		expect(Tok_Comma, "with_statement");
+		expect(Tok_Comma, false, "with_statement");
 		variable_reference(st);
 	}
+	expect(Tok_do, false, "with_statement");
+	statement(st);
 }
 
 void Parser::asm_statement(SynTree* st) {
-	expect(Tok_asm, "asm_statement");
-	expect(Tok_end, "asm_statement");
+	expect(Tok_asm, false, "asm_statement");
+	expect(Tok_end, false, "asm_statement");
 	if( FIRST_register_list(la.d_type) ) {
 		register_list(st);
 	}
 }
 
 void Parser::register_list(SynTree* st) {
-	expect(Tok_Lbrack, "register_list");
+	expect(Tok_Lbrack, false, "register_list");
 	string_constant(st);
 	while( la.d_type == Tok_Comma ) {
-		expect(Tok_Comma, "register_list");
+		expect(Tok_Comma, false, "register_list");
 		string_constant(st);
 	}
-	expect(Tok_Rbrack, "register_list");
+	expect(Tok_Rbrack, false, "register_list");
 }
 
 void Parser::procedure_declaration(SynTree* st) {
 	procedure_header(st);
-	expect(Tok_Semi, "procedure_declaration");
+	expect(Tok_Semi, false, "procedure_declaration");
 	subroutine_block(st);
-	expect(Tok_Semi, "procedure_declaration");
+	expect(Tok_Semi, false, "procedure_declaration");
 }
 
 void Parser::procedure_header(SynTree* st) {
-	expect(Tok_procedure, "procedure_header");
-	identifier(st);
-	if( la.d_type == Tok_Dot ) {
-		expect(Tok_Dot, "procedure_header");
-		identifier(st);
-	}
+	expect(Tok_procedure, false, "procedure_header");
+	designator(st);
 	formal_parameter_list(st);
-	modifiers_hintdirectives(st);
+	if( ( peek(1).d_type == Tok_Semi && ( peek(2).d_code == Tok_alias || peek(2).d_code == Tok_cdecl || peek(2).d_code == Tok_cppdecl || peek(2).d_code == Tok_export || peek(2).d_code == Tok_hardfloat || peek(2).d_type == Tok_inline || peek(2).d_code == Tok_interrupt || peek(2).d_code == Tok_iocheck || peek(2).d_code == Tok_local || peek(2).d_code == Tok_ms_abi_cdecl || peek(2).d_code == Tok_ms_abi_default || peek(2).d_code == Tok_mwpascal || peek(2).d_code == Tok_noreturn || peek(2).d_code == Tok_nostackframe || peek(2).d_code == Tok_overload || peek(2).d_code == Tok_pascal || peek(2).d_code == Tok_register || peek(2).d_code == Tok_safecall || peek(2).d_code == Tok_saveregisters || peek(2).d_code == Tok_softfloat || peek(2).d_code == Tok_stdcall || peek(2).d_code == Tok_sysv_abi_cdecl || peek(2).d_code == Tok_sysv_abi_default || peek(2).d_code == Tok_varargs || peek(2).d_code == Tok_vectorcall ) )  ) {
+		modifiers(st);
+	}
+	if( FIRST_hintdirectives(la.d_type) || FIRST_hintdirectives(la.d_code) ) {
+		hintdirectives(st);
+	}
 }
 
 void Parser::subroutine_block(SynTree* st) {
 	if( FIRST_block(la.d_type) ) {
 		block(st);
-	} else if( FIRST_external_directive(la.d_type) ) {
+	} else if( FIRST_external_directive(la.d_type) || FIRST_external_directive(la.d_code) ) {
 		external_directive(st);
-	} else if( FIRST_asm_block(la.d_type) ) {
+	} else if( FIRST_asm_block(la.d_type) || FIRST_asm_block(la.d_code) ) {
 		asm_block(st);
-	} else if( la.d_type == Tok_forward ) {
-		expect(Tok_forward, "subroutine_block");
+	} else if( la.d_code == Tok_forward ) {
+		expect(Tok_forward, true, "subroutine_block");
 	} else
 		invalid("subroutine_block");
 }
 
 void Parser::function_declaration(SynTree* st) {
 	function_header(st);
-	expect(Tok_Semi, "function_declaration");
+	expect(Tok_Semi, false, "function_declaration");
 	subroutine_block(st);
-	expect(Tok_Semi, "function_declaration");
+	expect(Tok_Semi, false, "function_declaration");
 }
 
 void Parser::function_header(SynTree* st) {
-	expect(Tok_function, "function_header");
-	identifier(st);
-	if( la.d_type == Tok_Dot ) {
-		expect(Tok_Dot, "function_header");
-		identifier(st);
-	}
+	expect(Tok_function, false, "function_header");
+	designator(st);
 	formal_parameter_list(st);
-	expect(Tok_Colon, "function_header");
+	expect(Tok_Colon, false, "function_header");
 	result_type(st);
-	modifiers_hintdirectives(st);
-}
-
-void Parser::modifiers_hintdirectives(SynTree* st) {
-	if( ( peek(1) == Tok_Semi && ( peek(2) == Tok_alias || peek(2) == Tok_cdecl || peek(2) == Tok_cppdecl || peek(2) == Tok_export || peek(2) == Tok_hardfloat || peek(2) == Tok_inline || peek(2) == Tok_interrupt || peek(2) == Tok_iocheck || peek(2) == Tok_local || peek(2) == Tok_ms_abi_cdecl || peek(2) == Tok_ms_abi_default || peek(2) == Tok_mwpascal || peek(2) == Tok_noreturn || peek(2) == Tok_nostackframe || peek(2) == Tok_overload || peek(2) == Tok_pascal || peek(2) == Tok_public || peek(2) == Tok_register || peek(2) == Tok_safecall || peek(2) == Tok_saveregisters || peek(2) == Tok_softfloat || peek(2) == Tok_stdcall || peek(2) == Tok_sysv_abi_cdecl || peek(2) == Tok_sysv_abi_default || peek(2) == Tok_varargs || peek(2) == Tok_vectorcall ) )  ) {
+	if( ( peek(1).d_type == Tok_Semi && ( peek(2).d_code == Tok_alias || peek(2).d_code == Tok_cdecl || peek(2).d_code == Tok_cppdecl || peek(2).d_code == Tok_export || peek(2).d_code == Tok_hardfloat || peek(2).d_type == Tok_inline || peek(2).d_code == Tok_interrupt || peek(2).d_code == Tok_iocheck || peek(2).d_code == Tok_local || peek(2).d_code == Tok_ms_abi_cdecl || peek(2).d_code == Tok_ms_abi_default || peek(2).d_code == Tok_mwpascal || peek(2).d_code == Tok_noreturn || peek(2).d_code == Tok_nostackframe || peek(2).d_code == Tok_overload || peek(2).d_code == Tok_pascal || peek(2).d_code == Tok_register || peek(2).d_code == Tok_safecall || peek(2).d_code == Tok_saveregisters || peek(2).d_code == Tok_softfloat || peek(2).d_code == Tok_stdcall || peek(2).d_code == Tok_sysv_abi_cdecl || peek(2).d_code == Tok_sysv_abi_default || peek(2).d_code == Tok_varargs || peek(2).d_code == Tok_vectorcall ) )  ) {
 		modifiers(st);
 	}
-	if( FIRST_hintdirectives(la.d_type) ) {
+	if( FIRST_hintdirectives(la.d_type) || FIRST_hintdirectives(la.d_code) ) {
 		hintdirectives(st);
 	}
 }
 
 void Parser::formal_parameter_list(SynTree* st) {
 	if( la.d_type == Tok_Lpar ) {
-		expect(Tok_Lpar, "formal_parameter_list");
+		expect(Tok_Lpar, false, "formal_parameter_list");
 		parameter_declaration(st);
 		while( la.d_type == Tok_Semi ) {
-			expect(Tok_Semi, "formal_parameter_list");
+			expect(Tok_Semi, false, "formal_parameter_list");
 			parameter_declaration(st);
 		}
-		expect(Tok_Rpar, "formal_parameter_list");
+		expect(Tok_Rpar, false, "formal_parameter_list");
 	}
 }
 
@@ -3380,67 +3400,67 @@ void Parser::parameter_declaration(SynTree* st) {
 
 void Parser::value_parameter(SynTree* st) {
 	identifier_list(st);
-	expect(Tok_Colon, "value_parameter");
+	expect(Tok_Colon, false, "value_parameter");
 	if( la.d_type == Tok_array ) {
-		expect(Tok_array, "value_parameter");
-		expect(Tok_of, "value_parameter");
+		expect(Tok_array, false, "value_parameter");
+		expect(Tok_of, false, "value_parameter");
 	}
 	parameter_type(st);
 	if( la.d_type == Tok_Eq ) {
-		expect(Tok_Eq, "value_parameter");
+		expect(Tok_Eq, false, "value_parameter");
 		default_parameter_value(st);
 	}
 }
 
 void Parser::variable_parameter(SynTree* st) {
-	expect(Tok_var, "variable_parameter");
+	expect(Tok_var, false, "variable_parameter");
 	identifier_list(st);
 	if( la.d_type == Tok_Colon ) {
-		expect(Tok_Colon, "variable_parameter");
+		expect(Tok_Colon, false, "variable_parameter");
 		if( la.d_type == Tok_array ) {
-			expect(Tok_array, "variable_parameter");
-			expect(Tok_of, "variable_parameter");
+			expect(Tok_array, false, "variable_parameter");
+			expect(Tok_of, false, "variable_parameter");
 		}
 		type_name(st);
 	}
 }
 
 void Parser::out_parameter(SynTree* st) {
-	expect(Tok_out, "out_parameter");
+	expect(Tok_out, false, "out_parameter");
 	identifier_list(st);
 	if( la.d_type == Tok_Colon ) {
-		expect(Tok_Colon, "out_parameter");
+		expect(Tok_Colon, false, "out_parameter");
 		if( la.d_type == Tok_array ) {
-			expect(Tok_array, "out_parameter");
-			expect(Tok_of, "out_parameter");
+			expect(Tok_array, false, "out_parameter");
+			expect(Tok_of, false, "out_parameter");
 		}
 		type_name(st);
 	}
 }
 
 void Parser::constant_parameter(SynTree* st) {
-	expect(Tok_const, "constant_parameter");
+	expect(Tok_const, false, "constant_parameter");
 	identifier_list(st);
 	if( la.d_type == Tok_Colon ) {
-		expect(Tok_Colon, "constant_parameter");
+		expect(Tok_Colon, false, "constant_parameter");
 		if( la.d_type == Tok_array ) {
-			expect(Tok_array, "constant_parameter");
-			expect(Tok_of, "constant_parameter");
+			expect(Tok_array, false, "constant_parameter");
+			expect(Tok_of, false, "constant_parameter");
 		}
 		type_name(st);
 	}
 }
 
 void Parser::external_directive(SynTree* st) {
-	expect(Tok_external, "external_directive");
+	expect(Tok_external, true, "external_directive");
 	if( FIRST_string_constant(la.d_type) ) {
 		string_constant(st);
-		if( la.d_type == Tok_name || la.d_type == Tok_index ) {
-			if( la.d_type == Tok_name ) {
-				expect(Tok_name, "external_directive");
+		if( la.d_code == Tok_name || la.d_code == Tok_index ) {
+			if( la.d_code == Tok_name ) {
+				expect(Tok_name, true, "external_directive");
 				string_constant(st);
-			} else if( la.d_type == Tok_index ) {
-				expect(Tok_index, "external_directive");
+			} else if( la.d_code == Tok_index ) {
+				expect(Tok_index, true, "external_directive");
 				integer_constant(st);
 			} else
 				invalid("external_directive");
@@ -3449,95 +3469,82 @@ void Parser::external_directive(SynTree* st) {
 }
 
 void Parser::asm_block(SynTree* st) {
-	expect(Tok_assembler, "asm_block");
-	expect(Tok_Semi, "asm_block");
+	expect(Tok_assembler, true, "asm_block");
+	expect(Tok_Semi, false, "asm_block");
 	while( FIRST_declaration_part(la.d_type) ) {
 		declaration_part(st);
 	}
 }
 
 void Parser::modifiers(SynTree* st) {
-	expect(Tok_Semi, "modifiers");
+	expect(Tok_Semi, false, "modifiers");
 	modifier(st);
-	while( ( peek(1) == Tok_Semi && ( peek(2) == Tok_alias || peek(2) == Tok_cdecl || peek(2) == Tok_cppdecl || peek(2) == Tok_export || peek(2) == Tok_hardfloat || peek(2) == Tok_inline || peek(2) == Tok_interrupt || peek(2) == Tok_iocheck || peek(2) == Tok_local || peek(2) == Tok_ms_abi_cdecl || peek(2) == Tok_ms_abi_default || peek(2) == Tok_mwpascal || peek(2) == Tok_noreturn || peek(2) == Tok_nostackframe || peek(2) == Tok_overload || peek(2) == Tok_pascal || peek(2) == Tok_public || peek(2) == Tok_register || peek(2) == Tok_safecall || peek(2) == Tok_saveregisters || peek(2) == Tok_softfloat || peek(2) == Tok_stdcall || peek(2) == Tok_sysv_abi_cdecl || peek(2) == Tok_sysv_abi_default || peek(2) == Tok_varargs || peek(2) == Tok_vectorcall ) )  ) {
-		expect(Tok_Semi, "modifiers");
+	while( ( peek(1).d_type == Tok_Semi && ( peek(2).d_code == Tok_alias || peek(2).d_code == Tok_cdecl || peek(2).d_code == Tok_cppdecl || peek(2).d_code == Tok_export || peek(2).d_code == Tok_hardfloat || peek(2).d_type == Tok_inline || peek(2).d_code == Tok_interrupt || peek(2).d_code == Tok_iocheck || peek(2).d_code == Tok_local || peek(2).d_code == Tok_ms_abi_cdecl || peek(2).d_code == Tok_ms_abi_default || peek(2).d_code == Tok_mwpascal || peek(2).d_code == Tok_noreturn || peek(2).d_code == Tok_nostackframe || peek(2).d_code == Tok_overload || peek(2).d_code == Tok_pascal || peek(2).d_code == Tok_register || peek(2).d_code == Tok_safecall || peek(2).d_code == Tok_saveregisters || peek(2).d_code == Tok_softfloat || peek(2).d_code == Tok_stdcall || peek(2).d_code == Tok_sysv_abi_cdecl || peek(2).d_code == Tok_sysv_abi_default || peek(2).d_code == Tok_varargs || peek(2).d_code == Tok_vectorcall ) )  ) {
+		expect(Tok_Semi, false, "modifiers");
 		modifier(st);
 	}
 }
 
 void Parser::modifier(SynTree* st) {
-	if( la.d_type == Tok_public ) {
-		expect(Tok_public, "modifier");
-		if( la.d_type == Tok_name ) {
-			expect(Tok_name, "modifier");
-			string_constant(st);
-		}
-	} else if( la.d_type == Tok_export ) {
-		expect(Tok_export, "modifier");
-	} else if( la.d_type == Tok_alias ) {
-		expect(Tok_alias, "modifier");
-		expect(Tok_Colon, "modifier");
+	if( la.d_code == Tok_export ) {
+		expect(Tok_export, true, "modifier");
+	} else if( la.d_code == Tok_alias ) {
+		expect(Tok_alias, true, "modifier");
+		expect(Tok_Colon, false, "modifier");
 		string_constant(st);
-	} else if( la.d_type == Tok_interrupt ) {
-		expect(Tok_interrupt, "modifier");
-	} else if( la.d_type == Tok_noreturn ) {
-		expect(Tok_noreturn, "modifier");
-	} else if( la.d_type == Tok_iocheck ) {
-		expect(Tok_iocheck, "modifier");
-	} else if( FIRST_call_modifiers2(la.d_type) ) {
-		call_modifiers2(st);
+	} else if( la.d_code == Tok_interrupt ) {
+		expect(Tok_interrupt, true, "modifier");
+	} else if( la.d_code == Tok_noreturn ) {
+		expect(Tok_noreturn, true, "modifier");
+	} else if( la.d_code == Tok_iocheck ) {
+		expect(Tok_iocheck, true, "modifier");
+	} else if( la.d_type == Tok_inline ) {
+		expect(Tok_inline, false, "modifier");
+	} else if( la.d_code == Tok_cdecl ) {
+		expect(Tok_cdecl, true, "modifier");
+	} else if( la.d_code == Tok_cppdecl ) {
+		expect(Tok_cppdecl, true, "modifier");
+	} else if( la.d_code == Tok_hardfloat ) {
+		expect(Tok_hardfloat, true, "modifier");
+	} else if( la.d_code == Tok_local ) {
+		expect(Tok_local, true, "modifier");
+	} else if( la.d_code == Tok_mwpascal ) {
+		expect(Tok_mwpascal, true, "modifier");
+	} else if( la.d_code == Tok_ms_abi_default ) {
+		expect(Tok_ms_abi_default, true, "modifier");
+	} else if( la.d_code == Tok_ms_abi_cdecl ) {
+		expect(Tok_ms_abi_cdecl, true, "modifier");
+	} else if( la.d_code == Tok_nostackframe ) {
+		expect(Tok_nostackframe, true, "modifier");
+	} else if( la.d_code == Tok_overload ) {
+		expect(Tok_overload, true, "modifier");
+	} else if( la.d_code == Tok_pascal ) {
+		expect(Tok_pascal, true, "modifier");
+	} else if( la.d_code == Tok_register ) {
+		expect(Tok_register, true, "modifier");
+	} else if( la.d_code == Tok_safecall ) {
+		expect(Tok_safecall, true, "modifier");
+	} else if( la.d_code == Tok_saveregisters ) {
+		expect(Tok_saveregisters, true, "modifier");
+	} else if( la.d_code == Tok_softfloat ) {
+		expect(Tok_softfloat, true, "modifier");
+	} else if( la.d_code == Tok_stdcall ) {
+		expect(Tok_stdcall, true, "modifier");
+	} else if( la.d_code == Tok_sysv_abi_default ) {
+		expect(Tok_sysv_abi_default, true, "modifier");
+	} else if( la.d_code == Tok_sysv_abi_cdecl ) {
+		expect(Tok_sysv_abi_cdecl, true, "modifier");
+	} else if( la.d_code == Tok_vectorcall ) {
+		expect(Tok_vectorcall, true, "modifier");
+	} else if( la.d_code == Tok_varargs ) {
+		expect(Tok_varargs, true, "modifier");
 	} else
 		invalid("modifier");
 }
 
-void Parser::call_modifiers2(SynTree* st) {
-	if( la.d_type == Tok_inline ) {
-		expect(Tok_inline, "call_modifiers2");
-	} else if( la.d_type == Tok_cdecl ) {
-		expect(Tok_cdecl, "call_modifiers2");
-	} else if( la.d_type == Tok_cppdecl ) {
-		expect(Tok_cppdecl, "call_modifiers2");
-	} else if( la.d_type == Tok_hardfloat ) {
-		expect(Tok_hardfloat, "call_modifiers2");
-	} else if( la.d_type == Tok_local ) {
-		expect(Tok_local, "call_modifiers2");
-	} else if( la.d_type == Tok_mwpascal ) {
-		expect(Tok_mwpascal, "call_modifiers2");
-	} else if( la.d_type == Tok_ms_abi_default ) {
-		expect(Tok_ms_abi_default, "call_modifiers2");
-	} else if( la.d_type == Tok_ms_abi_cdecl ) {
-		expect(Tok_ms_abi_cdecl, "call_modifiers2");
-	} else if( la.d_type == Tok_nostackframe ) {
-		expect(Tok_nostackframe, "call_modifiers2");
-	} else if( la.d_type == Tok_overload ) {
-		expect(Tok_overload, "call_modifiers2");
-	} else if( la.d_type == Tok_pascal ) {
-		expect(Tok_pascal, "call_modifiers2");
-	} else if( la.d_type == Tok_register ) {
-		expect(Tok_register, "call_modifiers2");
-	} else if( la.d_type == Tok_safecall ) {
-		expect(Tok_safecall, "call_modifiers2");
-	} else if( la.d_type == Tok_saveregisters ) {
-		expect(Tok_saveregisters, "call_modifiers2");
-	} else if( la.d_type == Tok_softfloat ) {
-		expect(Tok_softfloat, "call_modifiers2");
-	} else if( la.d_type == Tok_stdcall ) {
-		expect(Tok_stdcall, "call_modifiers2");
-	} else if( la.d_type == Tok_sysv_abi_default ) {
-		expect(Tok_sysv_abi_default, "call_modifiers2");
-	} else if( la.d_type == Tok_sysv_abi_cdecl ) {
-		expect(Tok_sysv_abi_cdecl, "call_modifiers2");
-	} else if( la.d_type == Tok_vectorcall ) {
-		expect(Tok_vectorcall, "call_modifiers2");
-	} else if( la.d_type == Tok_varargs ) {
-		expect(Tok_varargs, "call_modifiers2");
-	} else
-		invalid("call_modifiers2");
-}
-
 void Parser::operator_definition(SynTree* st) {
-	expect(Tok_operator, "operator_definition");
-	if( FIRST_assignment_operator_definition(la.d_type) ) {
+	expect(Tok_operator, false, "operator_definition");
+	if( FIRST_assignment_operator_definition(la.d_type) || FIRST_assignment_operator_definition(la.d_code) ) {
 		assignment_operator_definition(st);
 	} else if( FIRST_arithmetic_operator_definition(la.d_type) ) {
 		arithmetic_operator_definition(st);
@@ -3545,140 +3552,147 @@ void Parser::operator_definition(SynTree* st) {
 		comparison_operator_definition(st);
 	} else if( FIRST_logical_operator_definition(la.d_type) ) {
 		logical_operator_definition(st);
-	} else if( FIRST_other_operator_definition(la.d_type) ) {
+	} else if( FIRST_other_operator_definition(la.d_type) || FIRST_other_operator_definition(la.d_code) ) {
 		other_operator_definition(st);
 	} else
 		invalid("operator_definition");
 	if( FIRST_result_identifier(la.d_type) ) {
 		result_identifier(st);
 	}
-	expect(Tok_Colon, "operator_definition");
+	expect(Tok_Colon, false, "operator_definition");
 	result_type(st);
-	expect(Tok_Semi, "operator_definition");
+	expect(Tok_Semi, false, "operator_definition");
 	subroutine_block(st);
 }
 
 void Parser::assignment_operator_definition(SynTree* st) {
 	if( la.d_type == Tok_ColonEq ) {
-		expect(Tok_ColonEq, "assignment_operator_definition");
-	} else if( la.d_type == Tok_explicit ) {
-		expect(Tok_explicit, "assignment_operator_definition");
+		expect(Tok_ColonEq, false, "assignment_operator_definition");
+	} else if( la.d_code == Tok_explicit ) {
+		expect(Tok_explicit, true, "assignment_operator_definition");
 	} else
 		invalid("assignment_operator_definition");
-	expect(Tok_Lpar, "assignment_operator_definition");
+	expect(Tok_Lpar, false, "assignment_operator_definition");
 	value_parameter(st);
-	expect(Tok_Rpar, "assignment_operator_definition");
+	expect(Tok_Rpar, false, "assignment_operator_definition");
 }
 
 void Parser::arithmetic_operator_definition(SynTree* st) {
 	if( la.d_type == Tok_Plus ) {
-		expect(Tok_Plus, "arithmetic_operator_definition");
+		expect(Tok_Plus, false, "arithmetic_operator_definition");
 	} else if( la.d_type == Tok_Minus ) {
-		expect(Tok_Minus, "arithmetic_operator_definition");
+		expect(Tok_Minus, false, "arithmetic_operator_definition");
 	} else if( la.d_type == Tok_Star ) {
-		expect(Tok_Star, "arithmetic_operator_definition");
+		expect(Tok_Star, false, "arithmetic_operator_definition");
 	} else if( la.d_type == Tok_Slash ) {
-		expect(Tok_Slash, "arithmetic_operator_definition");
+		expect(Tok_Slash, false, "arithmetic_operator_definition");
 	} else if( la.d_type == Tok_2Star ) {
-		expect(Tok_2Star, "arithmetic_operator_definition");
+		expect(Tok_2Star, false, "arithmetic_operator_definition");
 	} else if( la.d_type == Tok_GtLt ) {
-		expect(Tok_GtLt, "arithmetic_operator_definition");
+		expect(Tok_GtLt, false, "arithmetic_operator_definition");
 	} else
 		invalid("arithmetic_operator_definition");
-	expect(Tok_Lpar, "arithmetic_operator_definition");
+	expect(Tok_Lpar, false, "arithmetic_operator_definition");
 	parameter_list(st);
-	expect(Tok_Rpar, "arithmetic_operator_definition");
+	expect(Tok_Rpar, false, "arithmetic_operator_definition");
 }
 
 void Parser::comparison_operator_definition(SynTree* st) {
 	if( la.d_type == Tok_Eq ) {
-		expect(Tok_Eq, "comparison_operator_definition");
+		expect(Tok_Eq, false, "comparison_operator_definition");
 	} else if( la.d_type == Tok_Lt ) {
-		expect(Tok_Lt, "comparison_operator_definition");
+		expect(Tok_Lt, false, "comparison_operator_definition");
 	} else if( la.d_type == Tok_Leq ) {
-		expect(Tok_Leq, "comparison_operator_definition");
+		expect(Tok_Leq, false, "comparison_operator_definition");
 	} else if( la.d_type == Tok_Gt ) {
-		expect(Tok_Gt, "comparison_operator_definition");
+		expect(Tok_Gt, false, "comparison_operator_definition");
 	} else if( la.d_type == Tok_Geq ) {
-		expect(Tok_Geq, "comparison_operator_definition");
+		expect(Tok_Geq, false, "comparison_operator_definition");
 	} else if( la.d_type == Tok_LtGt ) {
-		expect(Tok_LtGt, "comparison_operator_definition");
+		expect(Tok_LtGt, false, "comparison_operator_definition");
 	} else if( la.d_type == Tok_in ) {
-		expect(Tok_in, "comparison_operator_definition");
+		expect(Tok_in, false, "comparison_operator_definition");
 	} else
 		invalid("comparison_operator_definition");
-	expect(Tok_Lpar, "comparison_operator_definition");
+	expect(Tok_Lpar, false, "comparison_operator_definition");
 	parameter_list(st);
-	expect(Tok_Rpar, "comparison_operator_definition");
+	expect(Tok_Rpar, false, "comparison_operator_definition");
 }
 
 void Parser::logical_operator_definition(SynTree* st) {
 	if( la.d_type == Tok_and ) {
-		expect(Tok_and, "logical_operator_definition");
+		expect(Tok_and, false, "logical_operator_definition");
 	} else if( la.d_type == Tok_or ) {
-		expect(Tok_or, "logical_operator_definition");
+		expect(Tok_or, false, "logical_operator_definition");
 	} else if( la.d_type == Tok_xor ) {
-		expect(Tok_xor, "logical_operator_definition");
+		expect(Tok_xor, false, "logical_operator_definition");
 	} else if( la.d_type == Tok_not ) {
-		expect(Tok_not, "logical_operator_definition");
+		expect(Tok_not, false, "logical_operator_definition");
 	} else
 		invalid("logical_operator_definition");
-	expect(Tok_Lpar, "logical_operator_definition");
+	expect(Tok_Lpar, false, "logical_operator_definition");
 	parameter_list(st);
-	expect(Tok_Rpar, "logical_operator_definition");
+	expect(Tok_Rpar, false, "logical_operator_definition");
 }
 
 void Parser::other_operator_definition(SynTree* st) {
-	expect(Tok_ident, "other_operator_definition");
-	expect(Tok_Lpar, "other_operator_definition");
+	if( la.d_code == Tok_enumerator ) {
+		expect(Tok_enumerator, true, "other_operator_definition");
+	} else if( la.d_code == Tok_inc ) {
+		expect(Tok_inc, true, "other_operator_definition");
+	} else if( la.d_code == Tok_dec ) {
+		expect(Tok_dec, true, "other_operator_definition");
+	} else
+		invalid("other_operator_definition");
+	expect(Tok_Lpar, false, "other_operator_definition");
 	parameter_list(st);
-	expect(Tok_Rpar, "other_operator_definition");
+	expect(Tok_Rpar, false, "other_operator_definition");
 }
 
 void Parser::raise_statement(SynTree* st) {
-	expect(Tok_raise, "raise_statement");
+	expect(Tok_raise, false, "raise_statement");
 	if( FIRST_exception_instance(la.d_type) ) {
 		exception_instance(st);
-		if( FIRST_exception_address(la.d_type) ) {
+		if( FIRST_exception_address(la.d_type) || FIRST_exception_address(la.d_code) ) {
 			exception_address(st);
 		}
 	}
 }
 
 void Parser::exception_address(SynTree* st) {
-	expect(Tok_at, "exception_address");
+	expect(Tok_at, true, "exception_address");
 	address_expression(st);
 	while( la.d_type == Tok_Comma ) {
-		expect(Tok_Comma, "exception_address");
+		expect(Tok_Comma, false, "exception_address");
 		address_expression(st);
 	}
 }
 
 void Parser::try_statement(SynTree* st) {
-	expect(Tok_try, "try_statement");
+	expect(Tok_try, false, "try_statement");
 	statement_list(st);
 	if( la.d_type == Tok_except ) {
-		expect(Tok_except, "try_statement");
+		expect(Tok_except, false, "try_statement");
 		exceptionhandlers(st);
 	} else if( la.d_type == Tok_finally ) {
-		expect(Tok_finally, "try_statement");
+		expect(Tok_finally, false, "try_statement");
 		statement_list(st);
 	} else
 		invalid("try_statement");
-	expect(Tok_end, "try_statement");
+	expect(Tok_end, false, "try_statement");
 }
 
 void Parser::exceptionhandlers(SynTree* st) {
-	if( FIRST_statement_list(la.d_type) || FIRST_exception_handler(la.d_type) ) {
-		if( FIRST_statement_list(la.d_type) ) {
+	if( FIRST_statement_list(la.d_type) || FIRST_statement_list(la.d_code) || FIRST_exception_handler(la.d_type) ) {
+		if( FIRST_statement_list(la.d_type) || FIRST_statement_list(la.d_code) ) {
 			statement_list(st);
 		} else if( FIRST_exception_handler(la.d_type) ) {
 			exception_handler(st);
 			while( la.d_type == Tok_Semi ) {
-				expect(Tok_Semi, "exceptionhandlers");
+				expect(Tok_Semi, false, "exceptionhandlers");
 				exception_handler(st);
 			}
-			expect(Tok_else, "exceptionhandlers");
+			expect(Tok_else, false, "exceptionhandlers");
 			statement_list(st);
 		} else
 			invalid("exceptionhandlers");
@@ -3686,13 +3700,13 @@ void Parser::exceptionhandlers(SynTree* st) {
 }
 
 void Parser::exception_handler(SynTree* st) {
-	expect(Tok_on, "exception_handler");
-	if( ( peek(2) == Tok_Colon )  ) {
+	expect(Tok_on, false, "exception_handler");
+	if( ( peek(2).d_type == Tok_Colon )  ) {
 		identifier(st);
-		expect(Tok_Colon, "exception_handler");
+		expect(Tok_Colon, false, "exception_handler");
 	}
 	type_name(st);
-	expect(Tok_do, "exception_handler");
+	expect(Tok_do, false, "exception_handler");
 	statement(st);
 }
 
@@ -3713,12 +3727,12 @@ void Parser::result_type(SynTree* st) {
 }
 
 void Parser::property_declaration_part(SynTree* st) {
-	expect(Tok_property, "property_declaration_part");
+	expect(Tok_property, false, "property_declaration_part");
 	property_definition(st);
-	expect(Tok_Semi, "property_declaration_part");
+	expect(Tok_Semi, false, "property_declaration_part");
 	while( FIRST_property_definition(la.d_type) ) {
 		property_definition(st);
-		expect(Tok_Semi, "property_declaration_part");
+		expect(Tok_Semi, false, "property_declaration_part");
 	}
 }
 
@@ -3741,7 +3755,7 @@ void Parser::variable_identifier(SynTree* st) {
 void Parser::parameter_list(SynTree* st) {
 	parameter_declaration(st);
 	while( la.d_type == Tok_Semi ) {
-		expect(Tok_Semi, "parameter_list");
+		expect(Tok_Semi, false, "parameter_list");
 		parameter_declaration(st);
 	}
 }
@@ -3771,28 +3785,33 @@ void Parser::base_helper(SynTree* st) {
 
 void Parser::string_constant_declaration(SynTree* st) {
 	identifier(st);
-	expect(Tok_Eq, "string_constant_declaration");
+	expect(Tok_Eq, false, "string_constant_declaration");
 	string_constant(st);
-	expect(Tok_Semi, "string_constant_declaration");
+	expect(Tok_Semi, false, "string_constant_declaration");
 }
 
 void Parser::address_expression(SynTree* st) {
 	expression(st);
 }
 
+void Parser::address_constant(SynTree* st) {
+	expect(Tok_At, false, "address_constant");
+	identifier(st);
+}
+
 void Parser::array_constant(SynTree* st) {
-	expect(Tok_Lpar, "array_constant");
+	expect(Tok_Lpar, false, "array_constant");
 	expression(st);
 	while( la.d_type == Tok_Comma ) {
-		expect(Tok_Comma, "array_constant");
+		expect(Tok_Comma, false, "array_constant");
 		expression(st);
 	}
-	expect(Tok_Rpar, "array_constant");
+	expect(Tok_Rpar, false, "array_constant");
 }
 
 void Parser::label_def(SynTree* st) {
 	if( la.d_type == Tok_decimal_int ) {
-		expect(Tok_decimal_int, "label_def");
+		expect(Tok_decimal_int, false, "label_def");
 	} else if( FIRST_identifier(la.d_type) ) {
 		identifier(st);
 	} else
@@ -3803,34 +3822,34 @@ void Parser::unsigned_number(SynTree* st) {
 	if( FIRST_unsigned_integer(la.d_type) ) {
 		unsigned_integer(st);
 	} else if( la.d_type == Tok_unsigned_real ) {
-		expect(Tok_unsigned_real, "unsigned_number");
+		expect(Tok_unsigned_real, false, "unsigned_number");
 	} else
 		invalid("unsigned_number");
 }
 
 void Parser::unsigned_integer(SynTree* st) {
 	if( la.d_type == Tok_decimal_int ) {
-		expect(Tok_decimal_int, "unsigned_integer");
+		expect(Tok_decimal_int, false, "unsigned_integer");
 	} else if( la.d_type == Tok_hex_int ) {
-		expect(Tok_hex_int, "unsigned_integer");
+		expect(Tok_hex_int, false, "unsigned_integer");
 	} else if( la.d_type == Tok_octal_int ) {
-		expect(Tok_octal_int, "unsigned_integer");
+		expect(Tok_octal_int, false, "unsigned_integer");
 	} else if( la.d_type == Tok_binary_int ) {
-		expect(Tok_binary_int, "unsigned_integer");
+		expect(Tok_binary_int, false, "unsigned_integer");
 	} else
 		invalid("unsigned_integer");
 }
 
 void Parser::character_string(SynTree* st) {
 	if( la.d_type == Tok_quoted_string ) {
-		expect(Tok_quoted_string, "character_string");
+		expect(Tok_quoted_string, false, "character_string");
 	} else if( FIRST_control_string(la.d_type) ) {
 		control_string(st);
 	} else
 		invalid("character_string");
 	while( la.d_type == Tok_quoted_string || FIRST_control_string(la.d_type) ) {
 		if( la.d_type == Tok_quoted_string ) {
-			expect(Tok_quoted_string, "character_string");
+			expect(Tok_quoted_string, false, "character_string");
 		} else if( FIRST_control_string(la.d_type) ) {
 			control_string(st);
 		} else
@@ -3839,32 +3858,42 @@ void Parser::character_string(SynTree* st) {
 }
 
 void Parser::control_string(SynTree* st) {
-	expect(Tok_Hash, "control_string");
+	expect(Tok_Hash, false, "control_string");
 	unsigned_integer(st);
 }
 
 void Parser::selector(SynTree* st) {
 	identifier(st);
-	while( la.d_type == Tok_Dot || la.d_type == Tok_Lbrack || la.d_type == Tok_Hat ) {
+	while( la.d_type == Tok_Dot || la.d_type == Tok_Lbrack || la.d_type == Tok_Hat || FIRST_actual_parameter_list(la.d_type) ) {
 		if( la.d_type == Tok_Dot ) {
-			expect(Tok_Dot, "selector");
+			expect(Tok_Dot, false, "selector");
 			identifier(st);
 		} else if( la.d_type == Tok_Lbrack ) {
-			expect(Tok_Lbrack, "selector");
+			expect(Tok_Lbrack, false, "selector");
 			expression(st);
 			while( la.d_type == Tok_Comma ) {
-				expect(Tok_Comma, "selector");
+				expect(Tok_Comma, false, "selector");
 				expression(st);
 			}
-			expect(Tok_Rbrack, "selector");
+			expect(Tok_Rbrack, false, "selector");
 		} else if( la.d_type == Tok_Hat ) {
-			expect(Tok_Hat, "selector");
+			expect(Tok_Hat, false, "selector");
+		} else if( FIRST_actual_parameter_list(la.d_type) ) {
+			actual_parameter_list(st);
 		} else
 			invalid("selector");
 	}
 }
 
+void Parser::designator(SynTree* st) {
+	identifier(st);
+	while( la.d_type == Tok_Dot ) {
+		expect(Tok_Dot, false, "designator");
+		identifier(st);
+	}
+}
+
 void Parser::identifier(SynTree* st) {
-	expect(Tok_ident, "identifier");
+	expect(Tok_ident, false, "identifier");
 }
 

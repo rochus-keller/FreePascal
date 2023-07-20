@@ -13,13 +13,7 @@
 //   - refactorings and prefixes to get rid of successor ambiguities
 //   - fixed/adapted syntax based on fpc 3.2.2 source tree while debugging the parser; a lot of stuff was missing
 //     (e.g. reintroduce modifier, inherited statement und expression)
-//   - get rid of pseudo keywords (section "1.3.3 Modifiers" in the spec) as far as possible; seems to generate even more problems
-//  Intermediate conclusion: we cannot parse all of the FP 3.2.2 compiler sources with a generated parser ein either
-//     way, with or without pseudo keywords; if we allow for pseudo keyword, e.g. line 238 in aasmbase.pas gives an error;
-//     if we do without pseudo keywords, var modifiers are confused with next var declaration; this can only be avoided
-//     by a (hand crafted) parser able to do decisions about how to use idents based on context.
-
-#define _have_pseudo_keyords_
+//   - using new EbnfStudio feature for pseudo keywords (section "1.3.3 Modifiers" in the spec) 
 
 FreePascal ::= program_ | unit_ | library_
 
@@ -32,10 +26,10 @@ uses_clause_ ::= identifier [ in string_literal ]
 unit_ ::= unit_header interface_part implementation_part
 		( [ initialization_part ] [ finalization_part ]
 		| begin statement { ';' statement } ) end '.'
-unit_header ::= unit identifier { '.' identifier } [hintdirectives] ';'
+unit_header ::= unit designator [hintdirectives] ';'
 interface_part ::= interface [ uses_clause ] { constant_declaration_part | type_declaration_part
-				| variable_declaration_part | property_declaration_part | procedure_headers_part }
-procedure_headers_part ::= func_proc_header ';' [ call_modifiers ';' ]
+                                | variable_declaration_part | property_declaration_part | procedure_headers_part }
+procedure_headers_part ::= ( procedure_header | function_header ) ';' [ call_modifiers ';' ]
 implementation_part ::= implementation [ uses_clause ] { declaration_part }
 initialization_part ::= initialization statement { ';' statement }
 finalization_part ::= finalization statement { ';' statement }
@@ -49,10 +43,15 @@ exports_entry ::= identifier [ 'index' integer_constant ] [ 'name' string_consta
 
 block ::= { declaration_part } statement_part
 
-declaration_part ::= label_declaration_part | constant_declaration_part | resourcestring_declaration_part
-					| type_declaration_part | variable_declaration_part 
-					| threadvariable_declaration_part | func_proc_declaration_part
-					| exports_clause // only in library_
+declaration_part ::= label_declaration_part 
+                        | constant_declaration_part 
+                        | resourcestring_declaration_part
+                        | \LL:2\ class func_proc_declaration_part
+                        | func_proc_declaration_part
+                        | type_declaration_part 
+                        | variable_declaration_part 
+                        | threadvariable_declaration_part 
+                        | exports_clause // only in library_
 
 label_declaration_part ::= label label_def { ',' label_def } ';'
 
@@ -69,19 +68,14 @@ threadvariable_declaration_part ::= threadvar variable_declaration
 								{ \LA: 1:ident & 2:':'\ variable_declaration }
 
 func_proc_declaration_part ::= procedure_declaration | function_declaration
-							| constructor_declaration | destructor_declaration
+				  | constructor_declaration | destructor_declaration
 
 statement_part ::= compound_statement
 
-hint_directive ::= 
-#ifdef _have_pseudo_keyords_
-                                'deprecated' [ string_constant ]
+hint_directive ::= 'deprecated' [ string_constant ]
 				| 'experimental' 
 				| 'platform'
 				| 'unimplemented'
-#else
-                                 ident [ string_constant ]
-#endif
 
 hintdirectives ::= hint_directive { \LL:2\ ';' hint_directive }
 
@@ -95,20 +89,19 @@ typed_constant ::= constant | address_constant | array_constant | record_constan
 type_declaration ::= identifier '=' type_ [hintdirectives] ';'
 
 type_ ::= \LA: 2:'helper'\ helper_type
-		| \LA: 1:'generic'\ generic_type 
-		| \LL:1\ structured_type 
-		| \LA: 1:'specialize'\ specialized_type
+		| generic_type 
+		| structured_type 
+		| specialized_type
 		| [type] simple_type // includes ident for type_alias 
 		| pointer_type 
 		| procedural_type 
 
-simple_type ::= 
-			\LA: 1:(string | 'ansistring' )\ string_type
+simple_type ::= \LA: 1:(string | 'ansistring' )\ string_type
 			| ordinal_type // includes ident for real types
 type_alias- ::= [type] identifier // migrated to type_
-type_name ::= identifier
-subrange_type ::= constant '..' constant
-string_type ::= ( string | 'ansistring' ) [ '[' unsigned_integer ']' | '(' unsigned_integer ')' ] 
+type_name ::= identifier | string // string found in parameter types
+subrange_type ::= constant_expression '..' constant_expression // original was constant, but in the code there are subtractions
+string_type ::= ( string | 'ansistring' ) [ '[' constant_expression ']' | '(' unsigned_integer ')' ] 
 ordinal_type ::= \LA: 2:'..'\ subrange_type 
                     | enumerated_type 
                     | identifier // Integer, Shortint, SmallInt, Longint, ... , boolean, chars
@@ -129,18 +122,21 @@ packable_type_ ::= [ packed | 'bitpacked' ] ( array_type | record_type | object_
 array_type ::= array [ '[' ordinal_type { ',' ordinal_type } ']' ] of type_
 
 old_record_type- ::= record [ field_list ] end
-field_list ::= [ fixed_fields ] [';'] [ variant_part ] [';']
-variant_part ::= case [ \LA: 2:':'\ identifier ':' ] ordinal_type of variant { \LL:2\ ';' variant }
+field_list ::= [ fixed_fields ] [ variant_part ] [';']
+variant_part ::= case [ \LA: 2:':'\ identifier ':' ] ordinal_type of variant { \LL:2\ ';' [variant] }
 variant ::= constant { ',' constant } ':' '(' field_list ')'
-fixed_fields ::= fixed_field_ { \LL:2\ ';' fixed_field_ }
+fixed_fields ::= fixed_field_ { \LL:2\ ';' [ fixed_field_ ] }
 fixed_field_ ::= identifier_list ':' type_
 
-record_type ::= record { component_list3 } end
-component_list3 ::= [record_visibility_specifier] { \LA: 1:ident & 2:(':'|',')\ fixed_field_ } [';'] 
-					{ record_method_definition }
-					{ property_definition } { record_operator_definition } [ variant_part ] [';']
+record_type ::= record { component_list3 } [ variant_part ] [';'] end
+component_list3 ::= record_visibility_specifier
+                                    | fixed_field_ [';']
+                                    | record_method_definition
+                                    // TODO: is this really correct?: | property_definition
+                                    | record_operator_definition
+// field_list2 ::= fixed_field_ { \LA: 1:';' & 2:(ident&!('public'|'strict'|'private'))\ ';' [ fixed_field_ ] }
 record_visibility_specifier ::= 'public' | [ 'strict' ] 'private'
-record_method_definition ::= func_proc_header ';' [ call_modifiers ';' ]
+record_method_definition ::= ( function_header | procedure_header ) ';' [ call_modifiers ';' ]
 record_operator_definition ::= class operator_definition
 
 set_type ::= set of ordinal_type
@@ -149,27 +145,12 @@ file_type ::= file [ \LL:2\ of type_name ]
 
 pointer_type ::= '^' type_name
 
-procedural_type ::= func_proc_header [ \LL:2\ of object 
-#ifdef _have_pseudo_keyords_
-                                | \LL:2\ is 'nested' 
-#else
-                                | \LL:2\ is ident 
-#endif
-                                ] [ \LL:2\ ';' call_modifiers ]
-func_proc_header ::= ( function | procedure ) identifier formal_parameter_list [ ':' result_type ]
+procedural_type ::= func_proc_header [ \LL:2\ of object  | \LL:2\ is 'nested' ] [ \LL:2\ ';' call_modifiers ]
+func_proc_header ::= ( function | procedure ) formal_parameter_list [ ':' result_type ]
 call_modifiers ::= inline
-#ifdef _have_pseudo_keyords_
                                 | 'register' | 'cdecl' | 'pascal' | 'stdcall' | 'safecall'
-#else
-                                | ident
-#endif
-
-#ifndef _have_pseudo_keyords_
-modifier_hintdirective2 ::= ( ident [ string_constant ] [ ident string_constant ]  | absolute expression)
-#endif
 
 variable_declaration ::= identifier_list ':' type_ [ '=' expression ] 
-#ifdef _have_pseudo_keyords_
                                         [ \LA: 1:absolute | (1:';' & 2:('export'|'cvar'|'external'))\ variable_modifiers ] 
                                         [hintdirectives] ';'
 variable_modifiers ::= variable_modifier_ 
@@ -179,10 +160,6 @@ variable_modifier_ ::=
 	| ';' ( 'export' 
 		| 'cvar'
 		| 'external' [ string_constant ] [ 'name' string_constant ] ) 
-#else
-                // unfortunately this also fits the next variable_declaration; so we cannot cover this without pseudo keywords
-                modifier_hintdirective2 { ';' modifier_hintdirective2 }
-#endif
 
 property_definition ::= identifier [ property_interface ] property_specifiers
 property_interface ::= [ property_parameter_list ] ':' type_name [ 'index' integer_constant ]
@@ -191,8 +168,8 @@ property_specifiers ::= [ read_specifier ] [ write_specifier ] [ default_specifi
 read_specifier ::= 'read' field_or_function
 write_specifier ::= 'write' field_or_procedure
 default_specifier ::= 'default' [ constant ] | 'nodefault'
-field_or_function ::= identifier
-field_or_procedure ::= identifier
+field_or_function ::= designator // designator instead of identifier empirically derived from source
+field_or_procedure ::= designator
 
 object_type ::= object [ 'abstract' | 'sealed' ] [ heritage ] { component_list } end
 heritage ::= '(' type_name ')' // object  type identifier
@@ -203,11 +180,11 @@ object_visibility_specifier ::= 'private' | 'protected' | 'public'
 
 constructor_declaration ::= constructor_header ';' subroutine_block ';'
 destructor_declaration ::= destructor_header ';' subroutine_block ';'
-constructor_header ::= constructor  identifier [ '.' identifier ] formal_parameter_list
-destructor_header ::= destructor identifier [ '.' identifier ] formal_parameter_list
+constructor_header ::= constructor  designator formal_parameter_list
+destructor_header ::= destructor designator formal_parameter_list
 					// original:  ( identifier | qualified_method_identifier )
 
-method_definition ::= [class] ( func_proc_header | constructor_header | destructor_header ) ';'
+method_definition ::= [class] ( function_header | procedure_header | constructor_header | destructor_header ) ';'
 					method_directives
 method_directives ::= [ 'virtual' ';' [ 'abstract' ';' ] ] [ call_modifiers ';' ]
 
@@ -216,12 +193,13 @@ class_type ::= class [ [ 'abstract' | 'sealed' ] [ heritage2 ] { component_list2
 heritage2 ::= '(' type_name  // class type identifier
 				implemented_interfaces ')' 
 implemented_interfaces ::= { ',' identifier } // interface identifier
-component_list2 ::= [ class_visibility_specifier ] { field_definition2 } { class_part }
+component_list2 ::= [ class_visibility_specifier ] { \LA: 1:(ident&!('public'|'published'|'strict'|'private'|'protected'))\ 
+                                                                                field_definition2 } { class_part }
 class_part ::= constant_declaration_part | type_declaration_part | 
 			[class] ( variable_declaration_part | method_definition2 | property_definition2 )
 				// includes class_variable_declaration_part
 class_visibility_specifier ::= 'public' | 'published' | [ 'strict' ] ( 'private' | 'protected' )
-method_definition2 ::= ( func_proc_header | constructor_header | destructor_header ) ';'
+method_definition2 ::= ( function_header | procedure_header | constructor_header | destructor_header ) ';'
 					[ method_directives2 ';' ] [ call_modifiers ';' ]
 method_directives2 ::= ( 'virtual' | 'dynamic' ) [ \LL:2\ ';' ( 'abstract' | 'reintroduce' ) ]
 					| 'override'
@@ -230,9 +208,9 @@ method_directives2 ::= ( 'virtual' | 'dynamic' ) [ \LL:2\ ';' ( 'abstract' | 're
 field_definition2 ::= identifier_list ':' type_ ';' [ 'static' ';' ]
 class_variable_declaration_part- ::= class variable_declaration_part
 
-property_definition2 ::= property identifier [ property_interface ] property_specifiers2 [hintdirectives]
+property_definition2 ::= property identifier [ property_interface ] property_specifiers2 [hintdirectives] ';'
 property_specifiers2 ::= [ read_specifier ] [ write_specifier | implements_specifier ] [ default_specifier ]
-					[ stored_specifier ] [ defaultarraypropertyspecifier ]
+					[ stored_specifier ] [ \LA: 1:';' & 2:'default'\ defaultarraypropertyspecifier ]
 implements_specifier ::= 'implements' identifier { ',' identifier }
 stored_specifier ::= 'stored' ( constant ) // | identifier covered by constant
 defaultarraypropertyspecifier ::= ';' 'default'
@@ -266,7 +244,7 @@ term ::= factor { mulop factor }
 mulop ::= '*' | '/' | div | mod | and | shl | shr | as
 factor ::= '(' expression ')' | varref_or_funcall_or_constid_or_cast | unsigned_constant |
 		not factor | sign factor | set_constructor | address_factor | inherited_call
-varref_or_funcall_or_constid_or_cast ::= selector  [ actual_parameter_list ]
+varref_or_funcall_or_constid_or_cast ::= selector
 				// includes constant_identifier and qualified_method_designator
 unsigned_constant ::= unsigned_number | character_string | nil
 sign ::= '+' | '-'
@@ -280,7 +258,7 @@ set_group ::= expression [ '..' expression ]
 
 value_typecast- ::= type_name '(' expression ')'
 
-address_factor ::= '@' identifier [ '.' identifier ]
+address_factor ::= '@' selector
 		// for ( variable_reference | function_identifier | procedure_identifier |  qualified_method_identifier )
 
 constant_expression ::= expression
@@ -289,8 +267,9 @@ statement ::= [ \LL:2\ label_def ':' ] [ simple_statement | structured_statement
 
 simple_statement ::= inherited_call | assig_or_call | goto_statement | raise_statement
 
-assig_or_call ::= variable_reference ( assigop expression | [ actual_parameter_list ] )
+assig_or_call ::= selector [ assigop expression ]
 			// replaces assignment_statement and procedure_statement
+			// actual_parameter_list is part of selector
 
 inherited_call ::= 'inherited' [ identifier [ actual_parameter_list ] ]
 
@@ -311,11 +290,12 @@ repetitive_statement ::= for_statement | repeat_statement | while_statement
 
 compound_statement ::= begin statement { ';' statement } end
 
-statement_list ::= statement { \LL:2\ ';' statement }
+statement_list ::= statement { ';' [statement] }
 
-case_statement ::= case expression of case_part { \LL:2\ ';' case_part } [ else_part ] [ ';' ] end
+case_statement ::= case expression of case_part { ';' [case_part] } [ else_part ] end
 case_part ::= case_range { ',' case_range } ':' statement
-case_range ::= constant [ '..' constant ]
+case_range ::= constant_expression 
+                            [ '..' constant_expression ] // originally constant, but there are low(x)..high(x) calls in code
 else_part ::= ( else | 'otherwise' ) statement_list
 
 if_statement ::= if expression then statement [ else statement ]
@@ -336,34 +316,22 @@ repeat_statement ::= repeat statement_list until expression
 
 while_statement ::= while expression do statement
 
-with_statement ::= with variable_reference { ',' variable_reference }
+with_statement ::= with variable_reference { ',' variable_reference } do statement
 
 asm_statement ::= asm // assembler_code to be delivered by lexer with asm keyword
 				end [ register_list ]
 register_list ::= '[' string_constant { ',' string_constant } ']'
 
 procedure_declaration ::= procedure_header ';' subroutine_block ';'
-procedure_header ::= procedure  identifier ['.' identifier] formal_parameter_list
+procedure_header ::= procedure  designator formal_parameter_list
 					// original:  ( identifier | qualified_method_identifier )
-					modifiers_hintdirectives
+					[ \LL:2\ modifiers ] [hintdirectives]
 subroutine_block ::= block | external_directive | asm_block | 'forward'
 
 function_declaration ::= function_header ';' subroutine_block ';'
-function_header ::= function identifier ['.' identifier] formal_parameter_list ':' result_type
+function_header ::= function designator formal_parameter_list ':' result_type
 					// original:  ( identifier | qualified_method_identifier )
-					modifiers_hintdirectives
-
-#ifndef _have_pseudo_keyords_
-modifier_hintdirective ::= ( inline | ident [ \LL:2\ ( ident | ':' ) string_constant ] )
-#endif
-
-modifiers_hintdirectives ::= 
-#ifdef _have_pseudo_keyords_
-                                        [ \LL:2\ modifiers ] [hintdirectives]
-#else
-                                        { \LL:2\ ';' modifier_hintdirective }
-#endif
-
+					[ \LL:2\ modifiers ] [hintdirectives]
 
 formal_parameter_list ::= [ '(' parameter_declaration { ';' parameter_declaration } ')' ]
 parameter_declaration ::= value_parameter | variable_parameter | out_parameter |  constant_parameter
@@ -378,21 +346,19 @@ external_directive ::= 'external' [ string_constant [ 'name' string_constant | '
 
 asm_block ::= 'assembler' ';' { declaration_part } // TODO  asm_statement
 
-#ifdef _have_pseudo_keyords_
 modifiers ::= ';' modifier { \LL:2\ ';' modifier }
 modifier ::= 
-	'public' [ 'name' string_constant ]
-	| 'export'
+	// with LL(2) this collides with succeeding visibility spec: 'public' [ 'name' string_constant ]
+	'export'
 	| 'alias' ':' string_constant
 	| 'interrupt'
 	| 'noreturn'
 	| 'iocheck'
-	| call_modifiers2
-call_modifiers2 ::= inline
-                                 | 'cdecl' | 'cppdecl' | 'hardfloat' | 'local' | 'mwpascal' | 'ms_abi_default' | 'ms_abi_cdecl'
-				| 'nostackframe' | 'overload' | 'pascal' | 'register'| 'safecall' | 'saveregisters' | 'softfloat'
-				| 'stdcall' | 'sysv_abi_default' | 'sysv_abi_cdecl' | 'vectorcall' | 'varargs'
-#endif
+	// call modifiers:
+        | inline // the only true keyword
+        | 'cdecl' | 'cppdecl' | 'hardfloat' | 'local' | 'mwpascal' | 'ms_abi_default' | 'ms_abi_cdecl'
+        | 'nostackframe' | 'overload' | 'pascal' | 'register'| 'safecall' | 'saveregisters' | 'softfloat'
+        | 'stdcall' | 'sysv_abi_default' | 'sysv_abi_cdecl' | 'vectorcall' | 'varargs'
 
 operator_definition ::= operator ( assignment_operator_definition | arithmetic_operator_definition
 							| comparison_operator_definition | logical_operator_definition
@@ -402,8 +368,7 @@ assignment_operator_definition ::= ( ':=' | 'explicit' ) '(' value_parameter ')'
 arithmetic_operator_definition ::= ( '+' | '-' | '*' | '/' | '**' | '><' ) '(' parameter_list ')'
 comparison_operator_definition ::= ( '=' | '<' | '<=' | '>' | '>=' | '<>' | in ) '(' parameter_list ')'
 logical_operator_definition ::= ( and | or | xor | not ) '(' parameter_list ')'
-other_operator_definition ::= ( ident // ident instead of 'enumerator' | 'inc' | 'dec' 
-                                                        ) '(' parameter_list ')'
+other_operator_definition ::= ( 'enumerator' | 'inc' | 'dec' ) '(' parameter_list ')'
 
 raise_statement ::= raise [ exception_instance [ exception_address ] ]
 exception_address ::= 'at' address_expression { ',' address_expression }
@@ -433,16 +398,16 @@ default_parameter_value ::= expression
 parameter_type ::= type_name 
 //////
 
-// Guessed from existing fpc 3.2.2 source tree:
+// Inferred from existing fpc 3.2.2 source tree:
 constant ::= unsigned_number | string_constant | identifier
 base_helper ::= identifier
 string_constant_declaration ::= identifier '=' string_constant ';'
 address_expression ::= expression // results in CodePointer or Pointer
+address_constant ::= '@' identifier
+array_constant ::= '(' expression { ',' expression } ')'
 /////
 
 // TODO: 
-address_constant ::= 
-array_constant ::= '(' expression { ',' expression } ')'
 record_constant ::= 
 procedural_constant ::= 
 //////
@@ -456,22 +421,9 @@ unsigned_integer ::= decimal_int | hex_int | octal_int | binary_int
 character_string ::= ( quoted_string | control_string ) { quoted_string | control_string }
 control_string ::= '#' unsigned_integer
 
-selector ::= identifier { '.' identifier | '[' expression {',' expression} ']' | '^' }
-
-// with this trick we can use the non-keywords as idents where possible
+selector ::= identifier { '.' identifier | '[' expression {',' expression} ']' | '^'  | actual_parameter_list }
+designator ::= identifier { '.' identifier }
 identifier ::= ident
-#ifdef pseudo_idents
-	| 'index' | 'name' | 'deprecated' | 'experimental' | 'platform'
-	| 'bitpacked' | 'public' | 'strict' | 'private' | 'nested'
-	| 'export' | 'cvar' | 'read' | 'write' | 'unimplemented' | 'ansistring' 
-	| 'nodefault' | 'static' | 'protected' | 'virtual' | 'abstract' 
-	| 'sealed' | 'published' | 'dynamic' | 'override' | 'message' | 'implements' | 'stored' 
-	| 'default' | 'generic' | 'specialize' | 'helper' | 'otherwise' | 'forward' | 'external' 
-	| 'assembler' | 'alias' | 'interrupt' | 'noreturn' | 'iocheck' | 'cdecl' | 'cppdecl' | 'hardfloat' 
-	| 'local' | 'mwpascal' | 'ms_abi_default' | 'ms_abi_cdecl' | 'nostackframe' | 'overload' 
-	| 'pascal' | 'register'| 'safecall' | 'saveregisters' | 'softfloat' | 'stdcall' | 'sysv_abi_default' 
-	| 'sysv_abi_cdecl' | 'vectorcall' | 'varargs' | 'explicit' | 'enumerator' | 'inc' | 'dec' | 'at' 
-#endif
 
 // lexer tokens
 ident ::=
@@ -486,8 +438,20 @@ quoted_string ::=
 Comment ::=
 Directive ::=
 comment- ::= '(*' '*)' '{' '}'
+pseudo_keywords- ::=
+	 'index' | 'name' | 'deprecated' | 'experimental' | 'platform'
+	| 'bitpacked' | 'public' | 'strict' | 'private' | 'nested'
+	| 'export' | 'cvar' | 'read' | 'write' | 'unimplemented' | 'ansistring' 
+	| 'nodefault' | 'static' | 'protected' | 'virtual' | 'abstract' 
+	| 'sealed' | 'published' | 'dynamic' | 'override' | 'message' | 'implements' | 'stored' 
+	| 'default' | 'generic' | 'specialize' | 'helper' | 'otherwise' | 'forward' | 'external' 
+	| 'assembler' | 'alias' | 'interrupt' | 'noreturn' | 'iocheck' | 'cdecl' | 'cppdecl' | 'hardfloat' 
+	| 'local' | 'mwpascal' | 'ms_abi_default' | 'ms_abi_cdecl' | 'nostackframe' | 'overload' 
+	| 'pascal' | 'register'| 'safecall' | 'saveregisters' | 'softfloat' | 'stdcall' | 'sysv_abi_default' 
+	| 'sysv_abi_cdecl' | 'vectorcall' | 'varargs' | 'explicit' | 'enumerator' | 'inc' | 'dec' | 'at' 
 
 // Pragmas
 %module ::= 'FreePascal'
 %namespace ::= 'Fp'
 %suppress ::= ';' ',' '.' '#'
+%pseudo_keywords ::= 'true' // value doesn't matter

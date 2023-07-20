@@ -187,7 +187,81 @@ int Lexer::lookAhead(int off) const
         return 0;
 }
 
-Token Lexer::token(TokenType tt, int len, const QByteArray& val)
+static inline bool pseudoKeyword(int tt)
+{
+    switch(tt)
+    {
+    case Tok_index:
+    case Tok_name:
+    case Tok_deprecated:
+    case Tok_experimental:
+    case Tok_platform:
+    case Tok_bitpacked:
+    case Tok_public:
+    case Tok_strict:
+    case Tok_private:
+    case Tok_nested:
+    case Tok_export:
+    case Tok_cvar:
+    case Tok_read:
+    case Tok_write:
+    case Tok_unimplemented:
+    case Tok_ansistring:
+    case Tok_nodefault:
+    case Tok_static:
+    case Tok_protected:
+    case Tok_virtual:
+    case Tok_abstract:
+    case Tok_sealed:
+    case Tok_published:
+    case Tok_dynamic:
+    case Tok_override:
+    case Tok_message:
+    case Tok_implements:
+    case Tok_stored:
+    case Tok_default:
+    case Tok_generic:
+    case Tok_specialize:
+    case Tok_helper:
+    case Tok_otherwise:
+    case Tok_forward:
+    case Tok_external:
+    case Tok_assembler:
+    case Tok_alias:
+    case Tok_interrupt:
+    case Tok_noreturn:
+    case Tok_iocheck:
+    case Tok_cdecl:
+    case Tok_cppdecl:
+    case Tok_hardfloat:
+    case Tok_local:
+    case Tok_mwpascal:
+    case Tok_ms_abi_default:
+    case Tok_ms_abi_cdecl:
+    case Tok_nostackframe:
+    case Tok_overload:
+    case Tok_pascal:
+    case Tok_register:
+    case Tok_safecall:
+    case Tok_saveregisters:
+    case Tok_softfloat:
+    case Tok_stdcall:
+    case Tok_sysv_abi_default:
+    case Tok_sysv_abi_cdecl:
+    case Tok_vectorcall:
+    case Tok_varargs:
+    case Tok_explicit:
+    case Tok_enumerator:
+    case Tok_inc:
+    case Tok_dec:
+    case Tok_at:
+        return true;
+    default:
+        return false;
+    }
+}
+
+Token Lexer::token(TokenType tt, int len, const QByteArray& val )
 {
     if( tt != Tok_Invalid && tt != Tok_Comment && tt != Tok_Eof )
         countLine();
@@ -195,8 +269,21 @@ Token Lexer::token(TokenType tt, int len, const QByteArray& val)
     d_lastToken = t;
     d_colNr += len;
     t.d_len = len;
-    if( tt == Tok_ident || ( d_copyKeywords && tokenTypeIsKeyword(tt) && tt != Tok_asm ) )
+    if( tt == Tok_ident )
         t.d_id = Token::toId(val);
+    else if( pseudoKeyword(tt) )
+    {
+        t.d_type = Tok_ident;
+        t.d_code = tt;
+        t.d_id = Token::toId(val);
+    }else if( tokenTypeIsKeyword(tt) && tt != Tok_asm )
+    {
+        if( d_copyKeywords )
+            t.d_id = Token::toId(val);
+        else
+            t.d_val.clear();
+    }
+
     t.d_sourcePath = d_filePath;
     return t;
 }
@@ -224,10 +311,8 @@ Token Lexer::ident()
     {
         if( t == Tok_asm )
             return assembler();
-        else if( d_copyKeywords )
-            return token( t, off, str );
         else
-            return token( t, off );
+            return token( t, off, str );
     }
     return token( Tok_ident, off, str );
 }
