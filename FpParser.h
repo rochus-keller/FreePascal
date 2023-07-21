@@ -221,7 +221,9 @@ namespace Fp {
 		void string_constant_declaration(SynTree*);
 		void address_expression(SynTree*);
 		void address_constant(SynTree*);
-		void array_constant(SynTree*);
+		void record_or_array_constant(SynTree*);
+		void constant_element(SynTree*);
+		void subrange(SynTree*);
 		void label_def(SynTree*);
 		void unsigned_number(SynTree*);
 		void unsigned_integer(SynTree*);

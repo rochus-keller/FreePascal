@@ -255,6 +255,8 @@ static inline bool pseudoKeyword(int tt)
     case Tok_inc:
     case Tok_dec:
     case Tok_at:
+    case Tok_reintroduce:
+    case Tok_final:
         return true;
     default:
         return false;

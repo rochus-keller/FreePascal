@@ -17,7 +17,6 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_address_factor: return "address_factor";
 		case R_adop: return "adop";
 		case R_arithmetic_operator_definition: return "arithmetic_operator_definition";
-		case R_array_constant: return "array_constant";
 		case R_array_type: return "array_type";
 		case R_asm_block: return "asm_block";
 		case R_asm_statement: return "asm_statement";
@@ -50,6 +49,7 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_constant: return "constant";
 		case R_constant_declaration: return "constant_declaration";
 		case R_constant_declaration_part: return "constant_declaration_part";
+		case R_constant_element: return "constant_element";
 		case R_constant_expression: return "constant_expression";
 		case R_constant_parameter: return "constant_parameter";
 		case R_constructor_declaration: return "constructor_declaration";
@@ -166,6 +166,7 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_read_specifier: return "read_specifier";
 		case R_record_method_definition: return "record_method_definition";
 		case R_record_operator_definition: return "record_operator_definition";
+		case R_record_or_array_constant: return "record_or_array_constant";
 		case R_record_type: return "record_type";
 		case R_record_visibility_specifier: return "record_visibility_specifier";
 		case R_register_list: return "register_list";
@@ -194,6 +195,7 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_string_type: return "string_type";
 		case R_structured_statement: return "structured_statement";
 		case R_structured_type: return "structured_type";
+		case R_subrange: return "subrange";
 		case R_subrange_type: return "subrange_type";
 		case R_subroutine_block: return "subroutine_block";
 		case R_template_list: return "template_list";

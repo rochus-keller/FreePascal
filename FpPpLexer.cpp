@@ -494,7 +494,8 @@ protected:
             {
                 if( t.d_id != s_defined && t.d_id != s_undefined && t.d_id != s_sizeof
                         && t.d_id != s_declared )
-                    error(QString("cannot evaluate '%1'").arg(t.d_id));
+                    return QVariant(); // it is legal to evaluate non-existing macros
+                    // error(QString("cannot evaluate '%1'").arg(t.d_id));
                 return call(t.d_id);
             }
             break;

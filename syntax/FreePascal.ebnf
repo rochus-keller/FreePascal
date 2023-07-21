@@ -84,7 +84,7 @@ constant_declaration ::= identifier ( '=' expression | ':' type_ '=' typed_const
 
 typed_constant_declaration- ::= identifier ':' type_ '=' typed_constant hintdirectives ';'
 
-typed_constant ::= constant | address_constant | array_constant | record_constant | procedural_constant
+typed_constant ::= constant | address_constant | record_or_array_constant | procedural_constant | nil
 
 type_declaration ::= identifier '=' type_ [hintdirectives] ';'
 
@@ -186,15 +186,16 @@ destructor_header ::= destructor designator formal_parameter_list
 
 method_definition ::= [class] ( function_header | procedure_header | constructor_header | destructor_header ) ';'
 					method_directives
-method_directives ::= [ 'virtual' ';' [ 'abstract' ';' ] ] [ call_modifiers ';' ]
+method_directives ::= [ 'virtual' ';' [ ( 'abstract' | 'reintroduce' ) ';' ] ] [ call_modifiers ';' ]
 
-class_type ::= class [ [ 'abstract' | 'sealed' ] [ heritage2 ] { component_list2 } end ]
+class_type ::= class [ 'abstract' | 'sealed' ] [ heritage2 ] [ { component_list2 } end ]
 					// NOTE that Coco/R wrongly adds 'end' to the FIRST set of {component_list2}
 heritage2 ::= '(' type_name  // class type identifier
 				implemented_interfaces ')' 
 implemented_interfaces ::= { ',' identifier } // interface identifier
-component_list2 ::= [ class_visibility_specifier ] { \LA: 1:(ident&!('public'|'published'|'strict'|'private'|'protected'))\ 
-                                                                                field_definition2 } { class_part }
+component_list2 ::= [ class_visibility_specifier ] 
+                                    { \LA: 1:(ident&!('public'|'published'|'strict'|'private'|'protected'))\ 
+                                        field_definition2 } { class_part }
 class_part ::= constant_declaration_part | type_declaration_part | 
 			[class] ( variable_declaration_part | method_definition2 | property_definition2 )
 				// includes class_variable_declaration_part
@@ -202,7 +203,7 @@ class_visibility_specifier ::= 'public' | 'published' | [ 'strict' ] ( 'private'
 method_definition2 ::= ( function_header | procedure_header | constructor_header | destructor_header ) ';'
 					[ method_directives2 ';' ] [ call_modifiers ';' ]
 method_directives2 ::= ( 'virtual' | 'dynamic' ) [ \LL:2\ ';' ( 'abstract' | 'reintroduce' ) ]
-					| 'override'
+					| 'override' [ \LL:2\ ';' 'final' ]
 					| 'reintroduce'
 					| 'message' ( integer_constant | string_constant )  
 field_definition2 ::= identifier_list ':' type_ ';' [ 'static' ';' ]
@@ -242,7 +243,7 @@ simple_expression ::= term { adop term }
 adop ::= '+' | '-' | or | xor
 term ::= factor { mulop factor }
 mulop ::= '*' | '/' | div | mod | and | shl | shr | as
-factor ::= '(' expression ')' | varref_or_funcall_or_constid_or_cast | unsigned_constant |
+factor ::= '(' expression ')' ['^'] | varref_or_funcall_or_constid_or_cast | unsigned_constant |
 		not factor | sign factor | set_constructor | address_factor | inherited_call
 varref_or_funcall_or_constid_or_cast ::= selector
 				// includes constant_identifier and qualified_method_designator
@@ -310,7 +311,7 @@ final_value ::= expression
 
 for_in_statement- ::= for control_variable in enumerable do statement
 enumerable ::= enumerated_type 
-			| identifier | set_constructor  // instead of expression, TODO: array value
+			| selector | set_constructor  // instead of expression
 
 repeat_statement ::= repeat statement_list until expression
 
@@ -375,7 +376,7 @@ exception_address ::= 'at' address_expression { ',' address_expression }
 
 try_statement ::= try statement_list ( except exceptionhandlers | finally statement_list ) end
 				// includes try_finally_statement
-exceptionhandlers ::= [ statement_list | exception_handler { ';' exception_handler } else statement_list ]
+exceptionhandlers ::= [ statement_list | exception_handler { ';' [exception_handler] } [else statement_list] ]
 exception_handler ::= on [ \LA: 2:':'\ identifier ':' ] type_name //  class_type_identifier
 					do statement 
 
@@ -385,7 +386,7 @@ string_constant ::= character_string
 integer_constant ::= unsigned_integer
 result_type ::= type_ // The result type of a function can be any previously declared type
 property_declaration_part ::= property property_definition ';' { property_definition ';' } // TODO: confirm
-exception_instance ::= identifier
+exception_instance ::= selector
 result_identifier ::= identifier
 qualified_method_identifier- ::= identifier '.' identifier
 variable_reference ::= selector
@@ -404,11 +405,14 @@ base_helper ::= identifier
 string_constant_declaration ::= identifier '=' string_constant ';'
 address_expression ::= expression // results in CodePointer or Pointer
 address_constant ::= '@' identifier
-array_constant ::= '(' expression { ',' expression } ')'
+record_or_array_constant ::= '('  constant_element { (','|';') constant_element } ')' 
+                        // replaces array_constant ::= '(' const_expression { ',' const_expr } ')'
+                        // and record_constant ::= '(' identifier ':' const_expression { ';' identifier ':' const_expression } ')'
+constant_element ::= record_or_array_constant | [ \LA: 2:':'\ identifier ':' ] constant_expression
+subrange ::= ':' unsigned_integer ':' unsigned_integer // TODO: check
 /////
 
 // TODO: 
-record_constant ::= 
 procedural_constant ::= 
 //////
 
@@ -421,7 +425,8 @@ unsigned_integer ::= decimal_int | hex_int | octal_int | binary_int
 character_string ::= ( quoted_string | control_string ) { quoted_string | control_string }
 control_string ::= '#' unsigned_integer
 
-selector ::= identifier { '.' identifier | '[' expression {',' expression} ']' | '^'  | actual_parameter_list }
+selector ::= identifier { '.' identifier | '[' expression {',' expression} ']' | '^'  | actual_parameter_list 
+                                    | \LA: 1:':' & 3:':'\ subrange  }
 designator ::= identifier { '.' identifier }
 identifier ::= ident
 
@@ -449,6 +454,7 @@ pseudo_keywords- ::=
 	| 'local' | 'mwpascal' | 'ms_abi_default' | 'ms_abi_cdecl' | 'nostackframe' | 'overload' 
 	| 'pascal' | 'register'| 'safecall' | 'saveregisters' | 'softfloat' | 'stdcall' | 'sysv_abi_default' 
 	| 'sysv_abi_cdecl' | 'vectorcall' | 'varargs' | 'explicit' | 'enumerator' | 'inc' | 'dec' | 'at' 
+	| 'reintroduce' | 'final'
 
 // Pragmas
 %module ::= 'FreePascal'

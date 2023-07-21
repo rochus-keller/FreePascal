@@ -75,6 +75,7 @@ namespace Fp {
 			case Tok_exports: return "exports";
 			case Tok_external: return "external";
 			case Tok_file: return "file";
+			case Tok_final: return "final";
 			case Tok_finalization: return "finalization";
 			case Tok_finally: return "finally";
 			case Tok_for: return "for";
@@ -170,7 +171,6 @@ namespace Fp {
 			case Tok_with: return "with";
 			case Tok_write: return "write";
 			case Tok_xor: return "xor";
-			case Tok_record_constant: return "record_constant";
 			case Tok_procedural_constant: return "procedural_constant";
 			case Tok_ident: return "ident";
 			case Tok_unsigned_real: return "unsigned_real";
@@ -258,6 +258,7 @@ namespace Fp {
 			case Tok_exports: return "Tok_exports";
 			case Tok_external: return "Tok_external";
 			case Tok_file: return "Tok_file";
+			case Tok_final: return "Tok_final";
 			case Tok_finalization: return "Tok_finalization";
 			case Tok_finally: return "Tok_finally";
 			case Tok_for: return "Tok_for";
@@ -353,7 +354,6 @@ namespace Fp {
 			case Tok_with: return "Tok_with";
 			case Tok_write: return "Tok_write";
 			case Tok_xor: return "Tok_xor";
-			case Tok_record_constant: return "Tok_record_constant";
 			case Tok_procedural_constant: return "Tok_procedural_constant";
 			case Tok_ident: return "Tok_ident";
 			case Tok_unsigned_real: return "Tok_unsigned_real";
@@ -924,6 +924,9 @@ namespace Fp {
 								if( at(str,i+6) == 'y' ){
 									res = Tok_finally; i += 7;
 								}
+								break;
+							default:
+								res = Tok_final; i += 5;
 								break;
 							}
 						}

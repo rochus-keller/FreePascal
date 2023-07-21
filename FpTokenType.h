@@ -82,6 +82,7 @@ namespace Fp {
 		Tok_exports,
 		Tok_external,
 		Tok_file,
+		Tok_final,
 		Tok_finalization,
 		Tok_finally,
 		Tok_for,
@@ -179,7 +180,6 @@ namespace Fp {
 		Tok_xor,
 
 		TT_Specials,
-		Tok_record_constant,
 		Tok_procedural_constant,
 		Tok_ident,
 		Tok_unsigned_real,
