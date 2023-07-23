@@ -46,7 +46,7 @@ protected:
     int skipWhiteSpace();
     void nextLine();
     int lookAhead(int off = 1) const;
-    Token token(TokenType tt, int len = 1, const QByteArray &val = QByteArray());
+    Token token(TokenType tt, int len = 1, const QByteArray &val = QByteArray(), const QByteArray& lower = QByteArray());
     Token ident();
     Token number();
     Token hexnumber();

@@ -140,6 +140,7 @@ namespace Fp {
 		void expression(SynTree*);
 		void relop(SynTree*);
 		void simple_expression(SynTree*);
+		void simple__constant_expression(SynTree*);
 		void adop(SynTree*);
 		void term(SynTree*);
 		void mulop(SynTree*);
@@ -189,10 +190,12 @@ namespace Fp {
 		void variable_parameter(SynTree*);
 		void out_parameter(SynTree*);
 		void constant_parameter(SynTree*);
+		void parameter_type(SynTree*);
 		void external_directive(SynTree*);
 		void asm_block(SynTree*);
 		void modifiers(SynTree*);
 		void modifier(SynTree*);
+		void operator_header(SynTree*);
 		void operator_definition(SynTree*);
 		void assignment_operator_definition(SynTree*);
 		void arithmetic_operator_definition(SynTree*);
@@ -215,7 +218,6 @@ namespace Fp {
 		void variable_identifier(SynTree*);
 		void parameter_list(SynTree*);
 		void default_parameter_value(SynTree*);
-		void parameter_type(SynTree*);
 		void constant(SynTree*);
 		void base_helper(SynTree*);
 		void string_constant_declaration(SynTree*);

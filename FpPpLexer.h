@@ -53,6 +53,7 @@ public:
 
     bool reset(const QString& filePath);
     void setSearchPaths( const QStringList& paths ) { d_searchPaths = paths; }
+    bool addMacro( const QByteArray& name, const QByteArray& macro = QByteArray());
 
     Token nextToken();
     Token peekToken(quint8 lookAhead = 1);

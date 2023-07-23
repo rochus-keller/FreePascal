@@ -136,6 +136,7 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_object_visibility_specifier: return "object_visibility_specifier";
 		case R_old_record_type_: return "old_record_type";
 		case R_operator_definition: return "operator_definition";
+		case R_operator_header: return "operator_header";
 		case R_ordinal_type: return "ordinal_type";
 		case R_other_operator_definition: return "other_operator_definition";
 		case R_out_parameter: return "out_parameter";
@@ -181,6 +182,7 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_set_group: return "set_group";
 		case R_set_type: return "set_type";
 		case R_sign: return "sign";
+		case R_simple__constant_expression: return "simple__constant_expression";
 		case R_simple_expression: return "simple_expression";
 		case R_simple_statement: return "simple_statement";
 		case R_simple_type: return "simple_type";

@@ -159,6 +159,7 @@ static void checkParser(const QStringList& files)
         Lex lex;
         lex.lex.setSearchPaths(QStringList() << root);
         lex.lex.reset(file);
+        lex.lex.addMacro("cpu32bitalu");
         Parser p(&lex);
         qDebug() << "**** parsing" << file.mid(root.size()+1);
         p.RunParser();

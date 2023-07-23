@@ -95,6 +95,18 @@ Token PpLexer::peekToken(quint8 lookAhead)
     return d_buffer[ lookAhead - 1 ];
 }
 
+bool PpLexer::addMacro(const QByteArray& name, const QByteArray& macro)
+{
+    Macro m = readMacro( macro );
+    for( int i = 0; i < m.size(); i++ )
+    {
+        if( m[i].d_type == Tok_Invalid )
+            return false;
+    }
+    d_macros[Token::toId(name)] = m;
+    return true;
+}
+
 Token PpLexer::nextTokenImp()
 {
     if( d_stack.isEmpty() )

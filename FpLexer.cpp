@@ -263,7 +263,7 @@ static inline bool pseudoKeyword(int tt)
     }
 }
 
-Token Lexer::token(TokenType tt, int len, const QByteArray& val )
+Token Lexer::token(TokenType tt, int len, const QByteArray& val, const QByteArray& lower )
 {
     if( tt != Tok_Invalid && tt != Tok_Comment && tt != Tok_Eof )
         countLine();
@@ -272,16 +272,16 @@ Token Lexer::token(TokenType tt, int len, const QByteArray& val )
     d_colNr += len;
     t.d_len = len;
     if( tt == Tok_ident )
-        t.d_id = Token::toId(val);
+        t.d_id = Token::toId(lower);
     else if( pseudoKeyword(tt) )
     {
         t.d_type = Tok_ident;
         t.d_code = tt;
-        t.d_id = Token::toId(val);
+        t.d_id = Token::toId(lower);
     }else if( tokenTypeIsKeyword(tt) && tt != Tok_asm )
     {
         if( d_copyKeywords )
-            t.d_id = Token::toId(val);
+            t.d_id = Token::toId(lower);
         else
             t.d_val.clear();
     }
@@ -307,16 +307,16 @@ Token Lexer::ident()
     int pos = 0;
     const QByteArray keyword = str.toLower();
     TokenType t = tokenTypeFromString( keyword, &pos );
-    if( t != Tok_Invalid && pos != str.size() )
+    if( t != Tok_Invalid && pos != keyword.size() )
         t = Tok_Invalid;
     if( t != Tok_Invalid )
     {
         if( t == Tok_asm )
             return assembler();
         else
-            return token( t, off, str );
+            return token( t, off, str, keyword );
     }
-    return token( Tok_ident, off, str );
+    return token( Tok_ident, off, str, keyword);
 }
 
 static inline bool isHexDigit( char c )
