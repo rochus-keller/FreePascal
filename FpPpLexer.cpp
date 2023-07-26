@@ -107,6 +107,40 @@ bool PpLexer::addMacro(const QByteArray& name, const QByteArray& macro)
     return true;
 }
 
+struct { Cd::TokenType abbr, token; } s_cdmap[] = {
+    { Cd::Tok_B, Cd::Tok_BOOLEVAL },
+    { Cd::Tok_F, Cd::Tok_Invalid },
+    { Cd::Tok_H, Cd::Tok_LONGSTRINGS },
+    { Cd::Tok_I, Cd::Tok_IOCHECKS },
+    { Cd::Tok_M, Cd::Tok_TYPEINFO },
+    { Cd::Tok_P, Cd::Tok_OPENSTRINGS },
+    { Cd::Tok_Q, Cd::Tok_OVERFLOWCHECKS },
+    { Cd::Tok_R, Cd::Tok_RANGECHECKS },
+    { Cd::Tok_S, Cd::Tok_Invalid },
+    { Cd::Tok_T, Cd::Tok_TYPEDADDRESS },
+    { Cd::Tok_Invalid, Cd::Tok_Invalid }
+};
+
+static inline bool replace( QByteArray& data, Cd::TokenType& cd )
+{
+    int i = 0;
+    while( s_cdmap[i].abbr != Cd::Tok_Invalid )
+    {
+        if( data.length() >= 4 && ( data[3] == '+' || data[3] == '-' ) )
+        {
+            if( s_cdmap[i].token != Cd::Tok_Invalid )
+                cd = s_cdmap[i].token;
+            if( data[3] == '+' )
+                data = "ON";
+            else
+                data = "OFF";
+            return true;
+        }
+        i++;
+    }
+    return false;
+}
+
 Token PpLexer::nextTokenImp()
 {
     if( d_stack.isEmpty() )
@@ -131,27 +165,13 @@ Token PpLexer::nextTokenImp()
             QByteArray data = t.d_val;
             int pos = 2;
             Cd::TokenType cd = Cd::tokenTypeFromString( data.toUpper(), &pos );
-            if( cd == Cd::Tok_I && data.length() >= 4 && ( data[3] == '+' || data[3] == '-' ) )
-            {
-                cd = Cd::Tok_IOCHECKS;
-                if( data[3] == '+' )
-                    data = "ON";
-                else
-                    data = "OFF";
-            }
-            else if( cd == Cd::Tok_H && data.length() >= 4 && ( data[3] == '+' || data[3] == '-' ) )
-            {
-                cd = Cd::Tok_LONGSTRINGS;
-                if( data[3] == '+' )
-                    data = "ON";
-                else
-                    data = "OFF";
-            }
+            if( replace( data, cd ) )
+                ;
             else if( cd != Cd::Tok_Invalid )
             {
                 const bool ok = data.length() > pos && ( ::isspace(data[pos]) || data[pos] == '}' );
                 if( ok )
-                    data = data.mid(pos+1, data.length() - pos - 2);
+                    data = data.mid(pos+1, data.length() - pos - 2).trimmed();
                 else
                     cd = Cd::Tok_Invalid;
             }
@@ -167,6 +187,9 @@ Token PpLexer::nextTokenImp()
             case Cd::Tok_IFNDEF:
                 ok = handleIfndef(data);
                 break;
+            case Cd::Tok_IFOPT:
+                ok = handleIfOpt(data);
+                break;
             case Cd::Tok_ELSEIF:
                 ok = handleElseif(data);
                 break;
@@ -178,9 +201,17 @@ Token PpLexer::nextTokenImp()
                 break;
             case Cd::Tok_I:
             case Cd::Tok_INCLUDE:
-                // TODO: include %DATE%
                 if( statusBefore )
-                    ok = handleInclude(data,t);
+                {
+                    if( data.startsWith('%') && data.endsWith('%') )
+                    {
+                        // include %DATE%
+                        t.d_type = Tok_quoted_string;
+                        t.d_val = "''"; // TODO
+                        return t;
+                    }else
+                        ok = handleInclude(data,t);
+                }
                 break;
             case Cd::Tok_DEFINE:
                 if( statusBefore )
@@ -642,6 +673,23 @@ bool PpLexer::handleIfndef(const QByteArray& data)
         return error("$IFDEF requires a single name");
 
     const bool cond = !d_macros.contains(m.first().d_id);
+    d_conditionStack.append( ppstatus(false) );
+    ppsetthis( ppouter().open && cond );
+    return true;
+}
+
+bool PpLexer::handleIfOpt(const QByteArray& data)
+{
+    Macro m = readMacro( data );
+    if( m.isEmpty() )
+        return error("$IFOPT requires a name and a value");
+
+    if( m.first().d_type != Tok_ident && !isPseudoIdent(m.first()) )
+        return error("identifier expected for macro name");
+
+    // TODO
+    const bool cond = d_macros.contains(m.first().d_id);
+
     d_conditionStack.append( ppstatus(false) );
     ppsetthis( ppouter().open && cond );
     return true;

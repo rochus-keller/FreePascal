@@ -26,17 +26,13 @@
 #include "FpParser.h"
 using namespace Fp;
 
-//#define PROCESS_ALL_FILES
-
 QStringList collectFiles( const QDir& dir, const QStringList& suffix )
 {
     QStringList res;
     QStringList files = dir.entryList( QDir::Dirs | QDir::NoDotAndDotDot, QDir::Name );
 
-#ifdef PROCESS_ALL_FILES
     foreach( const QString& f, files )
         res += collectFiles( QDir( dir.absoluteFilePath(f) ), suffix );
-#endif
 
     files = dir.entryList( suffix, QDir::Files, QDir::Name );
     foreach( const QString& f, files )
@@ -157,9 +153,11 @@ static void checkParser(const QStringList& files)
     foreach( const QString& file, files )
     {
         Lex lex;
-        lex.lex.setSearchPaths(QStringList() << root);
+        lex.lex.setSearchPaths(QStringList() << root << root+"/sparc" << root+"/i386");
         lex.lex.reset(file);
         lex.lex.addMacro("cpu32bitalu");
+        lex.lex.addMacro("i386");
+        lex.lex.addMacro("GnuLd");
         Parser p(&lex);
         qDebug() << "**** parsing" << file.mid(root.size()+1);
         p.RunParser();
@@ -167,9 +165,7 @@ static void checkParser(const QStringList& files)
         {
             foreach( const Parser::Error& e, p.errors )
                 qCritical() << e.path.mid(root.size()+1) << e.row << e.col << e.msg;
-#ifndef PROCESS_ALL_FILES
-            break;
-#endif
+            // break;
         }else
         {
             ok++;

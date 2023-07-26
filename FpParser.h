@@ -140,12 +140,14 @@ namespace Fp {
 		void expression(SynTree*);
 		void relop(SynTree*);
 		void simple_expression(SynTree*);
-		void simple__constant_expression(SynTree*);
+		void simple_constant_expression(SynTree*);
 		void adop(SynTree*);
 		void term(SynTree*);
 		void mulop(SynTree*);
 		void factor(SynTree*);
 		void varref_or_funcall_or_constid_or_cast(SynTree*);
+		void nested_expr_or_structured_const(SynTree*);
+		void element(SynTree*);
 		void unsigned_constant(SynTree*);
 		void sign(SynTree*);
 		void actual_parameter_list(SynTree*);
@@ -222,17 +224,15 @@ namespace Fp {
 		void base_helper(SynTree*);
 		void string_constant_declaration(SynTree*);
 		void address_expression(SynTree*);
-		void address_constant(SynTree*);
-		void record_or_array_constant(SynTree*);
-		void constant_element(SynTree*);
 		void subrange(SynTree*);
 		void label_def(SynTree*);
 		void unsigned_number(SynTree*);
 		void unsigned_integer(SynTree*);
 		void character_string(SynTree*);
 		void control_string(SynTree*);
-		void selector(SynTree*);
 		void designator(SynTree*);
+		void selector(SynTree*);
+		void qualifier(SynTree*);
 		void identifier(SynTree*);
 	protected:
 		Token cur;

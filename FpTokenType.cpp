@@ -26,12 +26,14 @@ namespace Fp {
 			case Tok_ColonEq: return ":=";
 			case Tok_Semi: return ";";
 			case Tok_Lt: return "<";
+			case Tok_2Lt: return "<<";
 			case Tok_Leq: return "<=";
 			case Tok_LtGt: return "<>";
 			case Tok_Eq: return "=";
 			case Tok_Gt: return ">";
 			case Tok_GtLt: return "><";
 			case Tok_Geq: return ">=";
+			case Tok_2Gt: return ">>";
 			case Tok_At: return "@";
 			case Tok_Lbrack: return "[";
 			case Tok_Rbrack: return "]";
@@ -54,6 +56,7 @@ namespace Fp {
 			case Tok_cdecl: return "cdecl";
 			case Tok_class: return "class";
 			case Tok_const: return "const";
+			case Tok_constref: return "constref";
 			case Tok_constructor: return "constructor";
 			case Tok_cppdecl: return "cppdecl";
 			case Tok_cvar: return "cvar";
@@ -209,12 +212,14 @@ namespace Fp {
 			case Tok_ColonEq: return "Tok_ColonEq";
 			case Tok_Semi: return "Tok_Semi";
 			case Tok_Lt: return "Tok_Lt";
+			case Tok_2Lt: return "Tok_2Lt";
 			case Tok_Leq: return "Tok_Leq";
 			case Tok_LtGt: return "Tok_LtGt";
 			case Tok_Eq: return "Tok_Eq";
 			case Tok_Gt: return "Tok_Gt";
 			case Tok_GtLt: return "Tok_GtLt";
 			case Tok_Geq: return "Tok_Geq";
+			case Tok_2Gt: return "Tok_2Gt";
 			case Tok_At: return "Tok_At";
 			case Tok_Lbrack: return "Tok_Lbrack";
 			case Tok_Rbrack: return "Tok_Rbrack";
@@ -237,6 +242,7 @@ namespace Fp {
 			case Tok_cdecl: return "Tok_cdecl";
 			case Tok_class: return "Tok_class";
 			case Tok_const: return "Tok_const";
+			case Tok_constref: return "Tok_constref";
 			case Tok_constructor: return "Tok_constructor";
 			case Tok_cppdecl: return "Tok_cppdecl";
 			case Tok_cvar: return "Tok_cvar";
@@ -456,6 +462,9 @@ namespace Fp {
 			break;
 		case '<':
 			switch( at(str,i+1) ){
+			case '<':
+				res = Tok_2Lt; i += 2;
+				break;
 			case '=':
 				res = Tok_Leq; i += 2;
 				break;
@@ -477,6 +486,9 @@ namespace Fp {
 				break;
 			case '=':
 				res = Tok_Geq; i += 2;
+				break;
+			case '>':
+				res = Tok_2Gt; i += 2;
 				break;
 			default:
 				res = Tok_Gt; i += 1;
@@ -659,7 +671,13 @@ namespace Fp {
 					if( at(str,i+3) == 's' ){
 						if( at(str,i+4) == 't' ){
 							if( at(str,i+5) == 'r' ){
-								if( at(str,i+6) == 'u' ){
+								switch( at(str,i+6) ){
+								case 'e':
+									if( at(str,i+7) == 'f' ){
+										res = Tok_constref; i += 8;
+									}
+									break;
+								case 'u':
 									if( at(str,i+7) == 'c' ){
 										if( at(str,i+8) == 't' ){
 											if( at(str,i+9) == 'o' ){
@@ -669,6 +687,7 @@ namespace Fp {
 											}
 										}
 									}
+									break;
 								}
 							} else {
 								res = Tok_const; i += 5;

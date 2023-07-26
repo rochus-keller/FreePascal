@@ -70,6 +70,7 @@ protected:
     bool handleEndif();
     bool handleIfdef(const QByteArray& data);
     bool handleIfndef(const QByteArray& data);
+    bool handleIfOpt(const QByteArray& data);
     bool error( const QString& msg);
     Macro readMacro( const QByteArray& ) const;
     Macro resolve( const Macro&, bool* changed = 0 ) const;

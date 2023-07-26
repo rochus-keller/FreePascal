@@ -12,7 +12,7 @@ const char* SynTree::rToStr( quint16 r ) {
 	switch(r) {
 		case R_FreePascal: return "FreePascal";
 		case R_actual_parameter_list: return "actual_parameter_list";
-		case R_address_constant: return "address_constant";
+		case R_address_constant_: return "address_constant";
 		case R_address_expression: return "address_expression";
 		case R_address_factor: return "address_factor";
 		case R_adop: return "adop";
@@ -49,7 +49,7 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_constant: return "constant";
 		case R_constant_declaration: return "constant_declaration";
 		case R_constant_declaration_part: return "constant_declaration_part";
-		case R_constant_element: return "constant_element";
+		case R_constant_element_: return "constant_element";
 		case R_constant_expression: return "constant_expression";
 		case R_constant_parameter: return "constant_parameter";
 		case R_constructor_declaration: return "constructor_declaration";
@@ -63,6 +63,7 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_designator: return "designator";
 		case R_destructor_declaration: return "destructor_declaration";
 		case R_destructor_header: return "destructor_header";
+		case R_element: return "element";
 		case R_else_part: return "else_part";
 		case R_enumerable: return "enumerable";
 		case R_enumerated_type: return "enumerated_type";
@@ -132,6 +133,7 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_modifier: return "modifier";
 		case R_modifiers: return "modifiers";
 		case R_mulop: return "mulop";
+		case R_nested_expr_or_structured_const: return "nested_expr_or_structured_const";
 		case R_object_type: return "object_type";
 		case R_object_visibility_specifier: return "object_visibility_specifier";
 		case R_old_record_type_: return "old_record_type";
@@ -163,11 +165,12 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_property_specifiers2: return "property_specifiers2";
 		case R_pseudo_keywords_: return "pseudo_keywords";
 		case R_qualified_method_identifier_: return "qualified_method_identifier";
+		case R_qualifier: return "qualifier";
 		case R_raise_statement: return "raise_statement";
 		case R_read_specifier: return "read_specifier";
 		case R_record_method_definition: return "record_method_definition";
 		case R_record_operator_definition: return "record_operator_definition";
-		case R_record_or_array_constant: return "record_or_array_constant";
+		case R_record_or_array_constant_: return "record_or_array_constant";
 		case R_record_type: return "record_type";
 		case R_record_visibility_specifier: return "record_visibility_specifier";
 		case R_register_list: return "register_list";
@@ -182,7 +185,7 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_set_group: return "set_group";
 		case R_set_type: return "set_type";
 		case R_sign: return "sign";
-		case R_simple__constant_expression: return "simple__constant_expression";
+		case R_simple_constant_expression: return "simple_constant_expression";
 		case R_simple_expression: return "simple_expression";
 		case R_simple_statement: return "simple_statement";
 		case R_simple_type: return "simple_type";
