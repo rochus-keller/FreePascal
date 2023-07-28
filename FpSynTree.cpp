@@ -107,7 +107,6 @@ const char* SynTree::rToStr( quint16 r ) {
 		case R_heritage2: return "heritage2";
 		case R_hint_directive: return "hint_directive";
 		case R_hintdirectives: return "hintdirectives";
-		case R_identifier: return "identifier";
 		case R_identifier_list: return "identifier_list";
 		case R_identifier_list2: return "identifier_list2";
 		case R_if_statement: return "if_statement";

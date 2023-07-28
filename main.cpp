@@ -24,6 +24,7 @@
 #include "FpLexer.h"
 #include "FpPpLexer.h"
 #include "FpParser.h"
+#include "FpSynTree.h"
 using namespace Fp;
 
 QStringList collectFiles( const QDir& dir, const QStringList& suffix )
@@ -175,7 +176,7 @@ static void checkParser(const QStringList& files)
         QFile out(file + ".st");
         out.open(QIODevice::WriteOnly);
         QTextStream s(&out);
-        dump(s,&p.d_root,0);
+        dump(s,&p.root,0);
 #endif
     }
     qDebug() << "#### finished with" << ok << "files ok of total" << files.size() << "files" << "in" << timer.elapsed() << " [ms]";

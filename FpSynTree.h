@@ -108,7 +108,6 @@ namespace Fp {
 			R_heritage2,
 			R_hint_directive,
 			R_hintdirectives,
-			R_identifier,
 			R_identifier_list,
 			R_identifier_list2,
 			R_if_statement,

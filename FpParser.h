@@ -241,7 +241,8 @@ namespace Fp {
 		void next();
 		Token peek(int off);
 		void invalid(const char* what);
-		void expect(int tt, bool pkw, const char* where);
+		bool expect(int tt, bool pkw, const char* where);
+		void addTerminal(SynTree* st);
 	};
 }
 #endif // include
