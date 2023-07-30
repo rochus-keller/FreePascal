@@ -27,14 +27,14 @@ uses_clause_ ::= identifier [ in string_literal ]
 
 unit_ ::= unit_header interface_part implementation_part
 		( [ initialization_part ] [ finalization_part ]
-		| begin statement { ';' statement } ) end '.'
+		| begin statement_list ) end '.'
 unit_header ::= unit qualifier [hintdirectives] ';'
 interface_part ::= interface [ uses_clause ] { constant_declaration_part | type_declaration_part
                                 | variable_declaration_part | property_declaration_part | procedure_headers_part }
 procedure_headers_part ::= ( procedure_header | function_header | operator_header ) ';' [ call_modifiers ';' ]
 implementation_part ::= implementation [ uses_clause ] { declaration_part }
-initialization_part ::= initialization statement { ';' statement }
-finalization_part ::= finalization statement { ';' statement }
+initialization_part ::= initialization statement_list
+finalization_part ::= finalization statement_list
 
 library_ ::= library_header ';' [ uses_clause ] block '.'
 library_header ::= library identifier
@@ -305,7 +305,7 @@ conditional_statement ::= case_statement | if_statement
 
 repetitive_statement ::= for_statement | repeat_statement | while_statement
 
-compound_statement ::= begin statement { ';' statement } end
+compound_statement ::= begin statement_list end
 
 statement_list ::= statement { ';' [statement] }
 
