@@ -484,7 +484,7 @@ Token Lexer::comment(bool brace)
         t.d_sourcePath = d_filePath;
         return t;
     }
-    if( str.startsWith("{$") )
+    if( d_packComments && str.startsWith("{$") )
     {
         if( !terminated )
         {

@@ -1,0 +1,21 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/folder.png</file>
+        <file>images/unit.png</file>
+        <file>images/include.png</file>
+        <file>fonts/DejaVuSansMono.ttf</file>
+        <file>fonts/NotoSans.ttf</file>
+        <file>images/constant.png</file>
+        <file>images/function.png</file>
+        <file>images/implementation.png</file>
+        <file>images/interface.png</file>
+        <file>images/label.png</file>
+        <file>images/procedure.png</file>
+        <file>images/type.png</file>
+        <file>images/variable.png</file>
+        <file>images/category.png</file>
+        <file>images/class.png</file>
+        <file>images/source.png</file>
+        <file>images/assembler.png</file>
+    </qresource>
+</RCC>

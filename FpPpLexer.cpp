@@ -18,6 +18,7 @@
 
 #include "FpPpLexer.h"
 #include "CdTokenType.h"
+#include "FpFileSystem.h"
 #include <QBuffer>
 #include <QDir>
 #include <QFile>
@@ -30,7 +31,7 @@ static const char* s_undefined = 0;
 static const char* s_sizeof = 0;
 static const char* s_declared = 0;
 
-PpLexer::PpLexer():d_sloc(0)
+PpLexer::PpLexer(FileSystem* fs):d_sloc(0), d_fs(fs)
 {
     if( s_defined == 0 )
     {
@@ -56,6 +57,15 @@ bool PpLexer::reset(const QString& filePath)
     d_files.clear();
     d_sloc = 0;
     d_includes.clear();
+
+#ifdef _FP_HAVE_FILESYSTEM_
+    if( d_fs )
+    {
+        const FileSystem::File* f = d_fs->findFile(filePath);
+        if( f == 0 )
+            return false;
+    }
+#endif
 
     d_stack.push_back(Level());
     d_stack.back().d_lex.setIgnoreComments(false);
@@ -274,29 +284,53 @@ Token PpLexer::nextTokenImp()
 
 bool PpLexer::handleInclude(const QByteArray& data, const Token& t)
 {
-    QString path;
-    QFileInfo info( data.trimmed() );
-    if( info.isRelative() )
+    QString path = QString::fromUtf8(data).trimmed().toLower();
+    const FileSystem::File* found = 0;
+#ifdef _FP_HAVE_FILESYSTEM_
+    if( d_fs )
     {
-        const QDir dir = QFileInfo( d_stack.last().d_lex.getFilePath()).absoluteDir();
-        path = dir.absoluteFilePath(info.filePath());
-        if( !QFileInfo(path).exists() )
+        const FileSystem::File* f = d_fs->findFile(t.d_sourcePath);
+        Q_ASSERT( f );
+        QStringList pathFile = path.split('/');
+        const FileSystem::File* found = 0;
+        if( pathFile.size() == 1 )
         {
-            path.clear();
-            foreach( const QString& dir, d_searchPaths )
+            QString name = pathFile[0];
+            const int colon = name.indexOf(':');
+            if( colon != -1 )
+                name = name.mid(colon+1);
+            found = d_fs->findFile(f->d_dir, QString(), name);
+        }else if( pathFile.size() == 2 )
+            found = d_fs->findFile(f->d_dir, pathFile[0], pathFile[1]);
+    }
+#endif
+    if( found == 0 )
+    {
+        QFileInfo info( data.trimmed() );
+        if( info.isRelative() )
+        {
+            const QDir dir = QFileInfo( d_stack.last().d_lex.getFilePath()).absoluteDir();
+            path = dir.absoluteFilePath(info.filePath());
+            if( !QFileInfo(path).exists() )
             {
-                path = QDir(dir).absoluteFilePath(info.filePath());
-                if( QFileInfo(path).exists())
-                    break;
-                else
-                    path.clear();
+                path.clear();
+                foreach( const QString& dir, d_searchPaths )
+                {
+                    path = QDir(dir).absoluteFilePath(info.filePath());
+                    if( QFileInfo(path).exists())
+                        break;
+                    else
+                        path.clear();
+                }
             }
-        }
+        }else
+            path = info.absoluteFilePath();
     }else
-        path = info.absoluteFilePath();
+        path = found->d_realPath;
 
     Include inc;
     inc.d_loc = t.toLoc();
+    inc.d_path = path;
     inc.d_sourcePath = t.d_sourcePath;
     inc.d_len = t.d_val.size();
     d_includes.append(inc);
@@ -309,13 +343,13 @@ bool PpLexer::handleInclude(const QByteArray& data, const Token& t)
         {
             delete file;
             d_stack.pop_back();
-            d_err = QString("file '%1' cannot be opened").arg(info.filePath()).toUtf8();
+            d_err = QString("file '%1' cannot be opened").arg(path).toUtf8();
             return false;
         }
         d_stack.back().d_lex.setStream(file,path);
     }else
     {
-        d_err = QString("include file '%1' not found").arg(info.filePath()).toUtf8();
+        d_err = QString("include file '%1' not found").arg(data.constData()).toUtf8();
         return false;
     }
     return true;
@@ -772,4 +806,3 @@ PpLexer::Macro PpLexer::resolveRecursive(const PpLexer::Macro& m) const
         out = resolve(out,&changed);
     return out;
 }
-

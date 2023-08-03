@@ -27,6 +27,7 @@ class QIODevice;
 
 namespace Fp
 {
+class FileSystem;
 
 class PpLexer
 {
@@ -43,12 +44,13 @@ public:
 
     struct Include
     {
+        QString d_path; // the included file
         QString d_sourcePath; // the file where the include lives
         RowCol d_loc; // the pos of the include directive in sourcePath
         quint16 d_len; // the len of the include directive
     };
 
-    PpLexer();
+    PpLexer(FileSystem* = 0);
     ~PpLexer();
 
     bool reset(const QString& filePath);
@@ -128,6 +130,7 @@ private:
     QList<Include> d_includes;
     QHash<QString,Ranges> d_mutes;
     RowCol d_startMute;
+    FileSystem* d_fs;
 };
 }
 
