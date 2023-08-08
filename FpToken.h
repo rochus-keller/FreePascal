@@ -38,7 +38,7 @@ namespace Fp
             TokenType d_codeType;
         };
 #else
-        quint8 d_type; // TokenType
+        quint16 d_type; // TokenType
         quint8 d_code; // TokenType, signifies a pseudo keyword
 #endif
         quint8 d_len;
@@ -56,6 +56,8 @@ namespace Fp
 
         static const char* toId(const QByteArray& ident);
     };
+
+    typedef QList<Token> TokenList;
 }
 
 #endif // FPTOKEN_H

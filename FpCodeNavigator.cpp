@@ -72,22 +72,6 @@ void messageHander(QtMsgType type, const QMessageLogContext& ctx, const QString&
     report(type,message);
 }
 
-static QSet<QString> s_builtIns = QSet<QString>() << "ABS" << "ARCTAN" << "CHR" << "DISPOSE" << "EOF"
-                                                          << "EOLN" << "EXP" << "GET" << "LN" << "NEW" << "ODD"
-                                                          << "ORD" << "PACK" << "PAGE" << "PRED" << "PUT" << "READ"
-                                                          << "READLN" << "RESET" << "REWRITE" << "ROUND" << "SIN"
-                                                          << "SQR" << "SQRT" << "SUCC" << "TRUNC" << "UNPACK"
-                                                          << "WRITE" << "WRITELN"
-                                                          << "REAL" << "INTEGER" << "LONGINT" << "BOOLEAN"
-                                                          << "STRING" << "EXIT" << "TRUE" << "FALSE" << "CHAR"
-                                                          << "MARK" << "RELEASE" << "ORD4" << "POINTER"
-                                                          << "PWROFTEN" << "LENGTH" << "POS" << "CONCAT"
-                                                          << "COPY" << "DELETE" << "INSERT" << "MOVELEFT"
-                                                          << "MOVERIGHT" << "SIZEOF" << "SCANEQ" << "SCANNE"
-                                                          << "FILLCHAR" << "COS" << "HALT"
-                                                          << "THISCLASS";
-static QList<QByteArray> s_keywords = QList<QByteArray>() << "ABSTRACT" << "CLASSWIDE" << "OVERRIDE" << "DEFAULT";
-
 class CodeNavigator::Viewer : public QPlainTextEdit
 {
 public:
@@ -107,10 +91,7 @@ public:
         setTabChangesFocus(true);
         setMouseTracking(true);
         d_hl1 = new PascalPainter( this );
-        foreach( const QString& w, s_builtIns )
-            d_hl1->addBuiltIn(w.toUtf8());
-        foreach( const QByteArray& w, s_keywords )
-            d_hl1->addKeyword(w);
+        d_hl1->addBuiltIns();
 
 #if defined(Q_OS_WIN32)
         QFont monospace("Consolas");
@@ -315,7 +296,7 @@ public:
             }else
             {
                 c.movePosition(QTextCursor::EndOfWord,QTextCursor::KeepAnchor);
-                if( s_builtIns.contains(c.selectedText().toUpper()) )
+                if( d_hl1->containsBuiltIn(c.selectedText().toUtf8()) )
                     continue;
             }
 
@@ -889,9 +870,9 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     a.setOrganizationName("me@rochus-keller.ch");
-    a.setOrganizationDomain("github.com/rochus-keller/LisaPascal");
-    a.setApplicationName("LisaCodeNavigator");
-    a.setApplicationVersion("0.1.0");
+    a.setOrganizationDomain("github.com/rochus-keller/FreePascal");
+    a.setApplicationName("FpCodeNavigator");
+    a.setApplicationVersion("0.2.0");
     a.setStyle("Fusion");
     QFontDatabase::addApplicationFont(":/fonts/DejaVuSansMono.ttf"); 
 #ifdef Q_OS_LINUX

@@ -86,14 +86,14 @@ Token Lexer::peekToken(quint8 lookAhead)
     return d_buffer[ lookAhead - 1 ];
 }
 
-QList<Token> Lexer::tokens(const QString& code)
+TokenList Lexer::tokens(const QString& code)
 {
     QBuffer in;
     in.setData( code.toLatin1() );
     in.open(QIODevice::ReadOnly);
     setStream( &in );
 
-    QList<Token> res;
+    TokenList res;
     Token t = nextToken();
     while( t.isValid() )
     {

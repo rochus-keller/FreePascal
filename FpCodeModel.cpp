@@ -28,7 +28,6 @@
 using namespace Fp;
 
 #define LISA_WITH_MISSING
-#define _USE_EBNF_STUDIO_PARSER_
 
 class PascalModelVisitor
 {
@@ -44,6 +43,7 @@ class PascalModelVisitor
     };
     QList<Deferred> d_deferred;
     QList<Declaration*> d_forwards;
+    QList<Scope*> d_scopes;
 
 public:
     PascalModelVisitor(CodeModel* m):d_mdl(m) {}
@@ -56,25 +56,21 @@ public:
             return;
         if( top->d_tok.d_type == Tok_Invalid )
             top = top->d_children.first();
-        /*
-         // TODO
+
         switch(top->d_children.first()->d_tok.d_type)
         {
         case SynTree::R_program_:
-            program(cf,top->d_children.first());
+            program_(top->d_children.first());
             break;
-        case SynTree::R_regular_unit:
-            regular_unit(cf,top->d_children.first());
+        case SynTree::R_unit_:
+            unit_(top->d_children.first());
             break;
-        case SynTree::R_non_regular_unit:
-            qWarning() << "SynTree::R_non_regular_unit should no longer happen since we have include";
+        case SynTree::R_library_:
+            library_(top->d_children.first());
             break;
         }
-        */
     }
 private:
-
-    // TODO
 
     static inline void dummy() {}
 
@@ -98,13 +94,16 @@ private:
 
     void program_(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_program_);
+        Scope* s = new Scope();
+        s->d_owner = d_cf;
+        s->d_kind = Thing::Body;
+        d_cf->d_impl = s;
+        d_scopes.push_back(s);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_program_header:
                 program_header(sub);
-                break;
-            case Tok_Semi:
                 break;
             case SynTree::R_uses_clause:
                 uses_clause(sub);
@@ -112,10 +111,9 @@ private:
             case SynTree::R_block:
                 block(sub);
                 break;
-            case Tok_Dot:
-                break;
             }
         }
+        d_scopes.pop_back();
     }
 
     void program_header(SynTree* st) {
@@ -123,16 +121,11 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_program:
-                break;
             case Tok_ident:
-                break;
-            case Tok_Lpar:
+                addDecl(d_cf->d_globals,sub->d_tok,Thing::Module);
                 break;
             case SynTree::R_program_parameters:
                 program_parameters(sub);
-                break;
-            case Tok_Rpar:
                 break;
             }
         }
@@ -140,6 +133,7 @@ private:
 
     void program_parameters(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_program_parameters);
+        // TODO
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
@@ -155,14 +149,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_uses:
-                break;
             case SynTree::R_uses_clause_:
                 uses_clause_(sub);
-                break;
-            case Tok_Comma:
-                break;
-            case Tok_Semi:
                 break;
             }
         }
@@ -174,10 +162,10 @@ private:
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_ident:
-                break;
-            case Tok_in:
+                addSym(d_cf->d_globals,sub->d_tok);
                 break;
             case SynTree::R_string_literal:
+                // TODO
                 string_literal(sub);
                 break;
             }
@@ -204,14 +192,13 @@ private:
             case SynTree::R_finalization_part:
                 finalization_part(sub);
                 break;
-            case Tok_begin:
-                break;
             case SynTree::R_statement_list:
-                statement_list(sub);
-                break;
-            case Tok_end:
-                break;
-            case Tok_Dot:
+                if( d_cf->d_impl != 0 )
+                {
+                    d_scopes.push_back(d_cf->d_impl);
+                    statement_list(sub);
+                    d_scopes.pop_back();
+                }
                 break;
             }
         }
@@ -222,15 +209,29 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_unit:
-                break;
             case SynTree::R_qualifier:
-                qualifier(sub);
+                {
+                    TokenList toks = qualifier(sub);
+                    Scope* outer = d_cf->d_globals;
+                    for( int i = 0; i < toks.size() - 1; i++ )
+                    {
+                        Declaration* d = findInMembers(outer, toks[i]);
+                        if( d == 0 )
+                        {
+                            d = addDecl(outer,toks[i],Thing::Namespace);
+                            Scope* newScope = new Scope();
+                            newScope->d_owner = d_cf;
+                            newScope->d_kind = Thing::Body;
+                            newScope->d_outer = outer;
+                            d->d_body = newScope;
+                        }
+                        outer = d->d_body;
+                    }
+                    addDecl(outer,toks.last(),Thing::Module);
+                }
                 break;
             case SynTree::R_hintdirectives:
                 hintdirectives(sub);
-                break;
-            case Tok_Semi:
                 break;
             }
         }
@@ -238,11 +239,14 @@ private:
 
     void interface_part(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_interface_part);
+        Scope* newScope = new Scope();
+        newScope->d_owner = d_cf;
+        newScope->d_kind = Thing::Interface;
+        d_cf->d_intf = newScope;
+        d_scopes.push_back(newScope);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_interface:
-                break;
             case SynTree::R_uses_clause:
                 uses_clause(sub);
                 break;
@@ -263,6 +267,7 @@ private:
                 break;
             }
         }
+        d_scopes.pop_back();
     }
 
     void procedure_headers_part(SynTree* st) {
@@ -271,15 +276,13 @@ private:
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_procedure_header:
-                procedure_header(sub);
+                function_procedure_header(sub, Thing::Proc);
                 break;
             case SynTree::R_function_header:
-                function_header(sub);
+                function_procedure_header(sub, Thing::Func);
                 break;
             case SynTree::R_operator_header:
                 operator_header(sub);
-                break;
-            case Tok_Semi:
                 break;
             case SynTree::R_call_modifiers:
                 call_modifiers(sub);
@@ -290,11 +293,15 @@ private:
 
     void implementation_part(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_implementation_part);
+        Scope* newScope = new Scope();
+        newScope->d_owner = d_cf;
+        newScope->d_kind = Thing::Implementation;
+        newScope->d_outer = d_cf->d_intf;
+        d_cf->d_impl = newScope;
+        d_scopes.push_back(newScope);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_implementation:
-                break;
             case SynTree::R_uses_clause:
                 uses_clause(sub);
                 break;
@@ -303,45 +310,53 @@ private:
                 break;
             }
         }
+        d_scopes.pop_back();
     }
 
     void initialization_part(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_initialization_part);
+        if( d_cf->d_impl == 0 )
+            return;
+        d_scopes.push_back(d_cf->d_impl);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_initialization:
-                break;
             case SynTree::R_statement_list:
                 statement_list(sub);
                 break;
             }
         }
+        d_scopes.pop_back();
     }
 
     void finalization_part(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_finalization_part);
+        if( d_cf->d_impl == 0 )
+            return;
+        d_scopes.push_back(d_cf->d_impl);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_finalization:
-                break;
             case SynTree::R_statement_list:
                 statement_list(sub);
                 break;
             }
         }
+        d_scopes.pop_back();
     }
 
     void library_(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_library_);
+        Scope* s = new Scope();
+        s->d_owner = d_cf;
+        s->d_kind = Thing::Body;
+        d_cf->d_impl = s;
+        d_scopes.push_back(s);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_library_header:
                 library_header(sub);
-                break;
-            case Tok_Semi:
                 break;
             case SynTree::R_uses_clause:
                 uses_clause(sub);
@@ -349,10 +364,9 @@ private:
             case SynTree::R_block:
                 block(sub);
                 break;
-            case Tok_Dot:
-                break;
             }
         }
+        d_scopes.pop_back();
     }
 
     void library_header(SynTree* st) {
@@ -363,6 +377,7 @@ private:
             case Tok_library:
                 break;
             case Tok_ident:
+                addDecl(d_cf->d_globals,sub->d_tok,Thing::Module);
                 break;
             }
         }
@@ -373,12 +388,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_exports:
-                break;
             case SynTree::R_exports_list:
                 exports_list(sub);
-                break;
-            case Tok_Semi:
                 break;
             }
         }
@@ -392,14 +403,14 @@ private:
             case SynTree::R_exports_entry:
                 exports_entry(sub);
                 break;
-            case Tok_Comma:
-                break;
             }
         }
     }
 
     void exports_entry(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_exports_entry);
+
+        // TODO
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
@@ -449,6 +460,7 @@ private:
                 resourcestring_declaration_part(sub);
                 break;
             case Tok_class:
+                // optional prefix for func_proc_declaration_part
                 break;
             case SynTree::R_func_proc_declaration_part:
                 func_proc_declaration_part(sub);
@@ -474,14 +486,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_label:
-                break;
             case SynTree::R_label_def:
                 label_def(sub);
-                break;
-            case Tok_Comma:
-                break;
-            case Tok_Semi:
                 break;
             }
         }
@@ -492,8 +498,6 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_const:
-                break;
             case SynTree::R_constant_declaration:
                 constant_declaration(sub);
                 break;
@@ -520,13 +524,35 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_type:
-                break;
             case SynTree::R_type_declaration:
                 type_declaration(sub);
                 break;
             }
         }
+        for( int i = 0; i < d_deferred.size(); i++ )
+        {
+            const Deferred& def = d_deferred[i];
+            if( def.sym == 0 )
+                def.pointer->d_type = resolvedType(type_identifier(def.scope,def.typeIdent));
+#ifdef LISA_WITH_MISSING
+            else if( def.sym->d_decl == 0 && !def.typeIdent->d_children.isEmpty())
+            {
+                Token t = def.typeIdent->d_children.first()->d_tok;
+                Declaration* d = d_scopes.back()->findDecl(t.d_id);
+                if( d && d_cf->d_kind == Thing::Unit )
+                {
+                    QHash<Declaration*,Declaration*>::const_iterator intf = d_redirect.find(d);
+                    if( intf != d_redirect.end() )
+                        d = intf.value(); // attach all refs to the interface declaration (otherwise they are not visible)
+                }
+                def.sym->d_decl = d;
+                def.pointer->d_type = resolvedType(def.sym);
+                if( d )
+                    d->d_refs[t.d_sourcePath].append(def.sym);
+            }
+#endif
+        }
+        d_deferred.clear();
     }
 
     void variable_declaration_part(SynTree* st) {
@@ -534,8 +560,6 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_var:
-                break;
             case SynTree::R_variable_declaration:
                 variable_declaration(sub);
                 break;
@@ -548,8 +572,6 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_threadvar:
-                break;
             case SynTree::R_variable_declaration:
                 variable_declaration(sub);
                 break;
@@ -597,6 +619,7 @@ private:
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_hint_directive);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
+            // NOP
             switch(sub->d_tok.d_type) {
             case Tok_deprecated:
                 break;
@@ -621,8 +644,6 @@ private:
             case SynTree::R_hint_directive:
                 hint_directive(sub);
                 break;
-            case Tok_Semi:
-                break;
             }
         }
     }
@@ -633,13 +654,10 @@ private:
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_ident:
-                break;
-            case Tok_Eq:
+                addDecl( sub->d_tok, Thing::Const);
                 break;
             case SynTree::R_expression:
                 expression(sub);
-                break;
-            case Tok_Colon:
                 break;
             case SynTree::R_type_:
                 type_(sub);
@@ -649,8 +667,6 @@ private:
                 break;
             case SynTree::R_hintdirectives:
                 hintdirectives(sub);
-                break;
-            case Tok_Semi:
                 break;
             }
         }
@@ -665,6 +681,7 @@ private:
                 factor(sub);
                 break;
             case Tok_procedural_constant:
+                // TODO
                 break;
             }
         }
@@ -672,15 +689,19 @@ private:
 
     void type_declaration(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_type_declaration);
+        Declaration* d = 0;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_ident:
-                break;
-            case Tok_Eq:
+                d = addDecl(sub->d_tok, Thing::TypeDecl);
                 break;
             case SynTree::R_type_:
-                type_(sub);
+                {
+                    Type::Ref t = type_(sub);
+                    if( d )
+                        d->d_type = t;
+                }
                 break;
             case SynTree::R_hintdirectives:
                 hintdirectives(sub);
@@ -691,40 +712,41 @@ private:
         }
     }
 
-    void type_(SynTree* st) {
+    Type::Ref type_(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_type_);
+        Type::Ref res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_helper_type:
-                helper_type(sub);
+                res = helper_type(sub);
                 break;
             case SynTree::R_generic_type:
-                generic_type(sub);
+                res = generic_type(sub);
                 break;
             case SynTree::R_structured_type:
-                structured_type(sub);
+                res = structured_type(sub);
                 break;
             case SynTree::R_specialized_type:
-                specialized_type(sub);
-                break;
-            case Tok_type:
+                res = specialized_type(sub);
                 break;
             case SynTree::R_simple_type:
-                simple_type(sub);
+                res = simple_type(sub);
                 break;
             case SynTree::R_pointer_type:
-                pointer_type(sub);
+                res = pointer_type(sub);
                 break;
             case SynTree::R_procedural_type:
-                procedural_type(sub);
+                res = procedural_type(sub);
                 break;
             }
         }
+        return res;
     }
 
-    void simple_type(SynTree* st) {
+    Type::Ref simple_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_simple_type);
+        Type::Ref res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
@@ -732,37 +754,58 @@ private:
                 string_type(sub);
                 break;
             case SynTree::R_ordinal_type:
-                ordinal_type(sub);
+                res = ordinal_type(sub);
                 break;
             }
         }
+        return res;
     }
 
-    void type_name(SynTree* st) {
+    Type::Ref type_name(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_type_name);
+        Type::Ref res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_ident:
+                {
+                    Symbol* sym = addSym(d_scopes.back(),sub->d_tok);
+                    res = resolvedType(sym);
+                }
                 break;
             case Tok_string:
                 break;
             }
         }
+        return res;
     }
 
-    void subrange_type(SynTree* st) {
+    Type::Ref subrange_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_subrange_type);
+        Type::Ref res;
+        SynTree* ex = 0;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_simple_constant_expression:
-                simple_constant_expression(sub);
+                ex = sub;
+                // simple_constant_expression(sub);
                 break;
             case Tok_2Dot:
-                break;
+                return res;
             }
         }
+        if( ex )
+        {
+            while( ex && ex->d_children.size() == 1 )
+                ex = ex->d_children.first();
+            if( ex && ex->d_tok.d_type == Tok_ident )
+            {
+                Symbol* sym = addSym(d_scopes.back(),ex->d_tok);
+                res = resolvedType(sym);
+            }
+        }
+        return res;
     }
 
     void string_type(SynTree* st) {
@@ -792,8 +835,9 @@ private:
         }
     }
 
-    void ordinal_type(SynTree* st) {
+    Type::Ref ordinal_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_ordinal_type);
+        Type::Ref res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
@@ -801,23 +845,25 @@ private:
                 enumerated_type(sub);
                 break;
             case SynTree::R_subrange_type:
-                subrange_type(sub);
+                res = subrange_type(sub);
                 break;
             }
         }
+        return res;
     }
 
-    void identifier_list(SynTree* st) {
+    TokenList identifier_list(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_identifier_list);
+        TokenList res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_ident:
-                break;
-            case Tok_Comma:
+                res.append( sub->d_tok );
                 break;
             }
         }
+        return res;
     }
 
     void enumerated_type(SynTree* st) {
@@ -825,14 +871,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Lpar:
-                break;
             case SynTree::R_enumerated_type_:
                 enumerated_type_(sub);
-                break;
-            case Tok_Comma:
-                break;
-            case Tok_Rpar:
                 break;
             }
         }
@@ -858,8 +898,6 @@ private:
             case SynTree::R_assigned_enum_:
                 assigned_enum_(sub);
                 break;
-            case Tok_Comma:
-                break;
             }
         }
     }
@@ -870,10 +908,7 @@ private:
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_ident:
-                break;
-            case Tok_Eq:
-                break;
-            case Tok_ColonEq:
+                addDecl(sub->d_tok, Thing::Const);
                 break;
             case SynTree::R_expression:
                 expression(sub);
@@ -882,19 +917,20 @@ private:
         }
     }
 
-    void structured_type(SynTree* st) {
+    Type::Ref structured_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_structured_type);
+        Type::Ref res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_class_reference_type:
-                class_reference_type(sub);
+                res = class_reference_type(sub);
                 break;
             case SynTree::R_packable_type_:
-                packable_type_(sub);
+                res = packable_type_(sub);
                 break;
             case SynTree::R_interface_type:
-                interface_type(sub);
+                res = interface_type(sub);
                 break;
             case SynTree::R_set_type:
                 set_type(sub);
@@ -904,56 +940,54 @@ private:
                 break;
             }
         }
+        return res;
     }
 
-    void packable_type_(SynTree* st) {
+    Type::Ref packable_type_(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_packable_type_);
+        Type::Ref res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_packed:
-                break;
-            case Tok_bitpacked:
-                break;
             case SynTree::R_array_type:
-                array_type(sub);
+                res = array_type(sub);
                 break;
             case SynTree::R_record_type:
-                record_type(sub);
+                res = record_type(sub);
                 break;
             case SynTree::R_object_type:
-                object_type(sub);
+                res = object_type(sub);
                 break;
             case SynTree::R_class_type:
-                class_type(sub);
+                res = class_type(sub);
                 break;
             }
         }
+        return res;
     }
 
-    void array_type(SynTree* st) {
+    Type::Ref array_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_array_type);
+        Type::Ref res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_array:
-                break;
-            case Tok_Lbrack:
-                break;
             case SynTree::R_ordinal_type:
                 ordinal_type(sub);
                 break;
-            case Tok_Comma:
-                break;
-            case Tok_Rbrack:
-                break;
-            case Tok_of:
-                break;
             case SynTree::R_type_:
-                type_(sub);
+                res = type_(sub);
                 break;
             }
         }
+        if( res.data() != 0 )
+        {
+            Type::Ref arr( new Type() );
+            arr->d_kind = Type::Array;
+            arr->d_type = res;
+            res = arr;
+        }
+        return res;
     }
 
     void field_list(SynTree* st) {
@@ -963,8 +997,6 @@ private:
             switch(sub->d_tok.d_type) {
             case SynTree::R_fixed_fields:
                 fixed_fields(sub);
-                break;
-            case Tok_Semi:
                 break;
             case SynTree::R_variant_part:
                 variant_part(sub);
@@ -978,21 +1010,14 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_case:
-                break;
             case Tok_ident:
-                break;
-            case Tok_Colon:
+                addSym(d_scopes.back(),sub->d_tok);
                 break;
             case SynTree::R_ordinal_type:
                 ordinal_type(sub);
                 break;
-            case Tok_of:
-                break;
             case SynTree::R_variant:
                 variant(sub);
-                break;
-            case Tok_Semi:
                 break;
             }
         }
@@ -1006,16 +1031,8 @@ private:
             case SynTree::R_constant:
                 constant(sub);
                 break;
-            case Tok_Comma:
-                break;
-            case Tok_Colon:
-                break;
-            case Tok_Lpar:
-                break;
             case SynTree::R_field_list:
                 field_list(sub);
-                break;
-            case Tok_Rpar:
                 break;
             }
         }
@@ -1029,48 +1046,53 @@ private:
             case SynTree::R_fixed_field_:
                 fixed_field_(sub);
                 break;
-            case Tok_Semi:
-                break;
             }
         }
     }
 
     void fixed_field_(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_fixed_field_);
+        TokenList ids;
+        Type::Ref tp;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_identifier_list:
-                identifier_list(sub);
-                break;
-            case Tok_Colon:
+                ids = identifier_list(sub);
                 break;
             case SynTree::R_type_:
-                type_(sub);
+                tp = type_(sub);
                 break;
             }
         }
+        foreach( const Token& t, ids )
+        {
+            Declaration* d = addDecl(t, Thing::Field);
+            d->d_type = tp;
+        }
     }
 
-    void record_type(SynTree* st) {
+    Type::Ref record_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_record_type);
+        Type::Ref res(new Type());
+        res->d_kind = Type::Record;
+        res->d_members = new Scope();
+        res->d_members->d_kind = Thing::Members;
+        res->d_members->d_outer = d_scopes.back();
+        d_scopes.push_back(res->d_members);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_record:
-                break;
             case SynTree::R_component_list3:
                 component_list3(sub);
                 break;
             case SynTree::R_variant_part:
                 variant_part(sub);
                 break;
-            case Tok_Semi:
-                break;
-            case Tok_end:
-                break;
             }
         }
+        d_scopes.pop_back();
+        return res;
     }
 
     void component_list3(SynTree* st) {
@@ -1083,8 +1105,6 @@ private:
                 break;
             case SynTree::R_fixed_field_:
                 fixed_field_(sub);
-                break;
-            case Tok_Semi:
                 break;
             case SynTree::R_record_method_definition:
                 record_method_definition(sub);
@@ -1099,6 +1119,7 @@ private:
     void record_visibility_specifier(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_record_visibility_specifier);
         for(int i = 0; i < st->d_children.size(); i++ ) {
+            // NOP
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_public:
@@ -1117,12 +1138,10 @@ private:
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_function_header:
-                function_header(sub);
+                function_procedure_header(sub, Thing::Func);
                 break;
             case SynTree::R_procedure_header:
-                procedure_header(sub);
-                break;
-            case Tok_Semi:
+                function_procedure_header(sub, Thing::Proc);
                 break;
             case SynTree::R_call_modifiers:
                 call_modifiers(sub);
@@ -1137,6 +1156,7 @@ private:
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_class:
+                // optional prefix
                 break;
             case SynTree::R_operator_definition:
                 operator_definition(sub);
@@ -1150,10 +1170,6 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_set:
-                break;
-            case Tok_of:
-                break;
             case SynTree::R_ordinal_type:
                 ordinal_type(sub);
                 break;
@@ -1166,10 +1182,6 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_file:
-                break;
-            case Tok_of:
-                break;
             case SynTree::R_type_name:
                 type_name(sub);
                 break;
@@ -1177,22 +1189,53 @@ private:
         }
     }
 
-    void pointer_type(SynTree* st) {
+    void defer( Symbol* sym, Type* pointer, Scope* scope, SynTree* typeIdent )
+    {
+        // TODO: here we only support
+        // the original Pascal scope rules
+        Deferred def;
+        def.sym = sym;
+        def.pointer = pointer;
+        def.scope = scope;
+        def.typeIdent = typeIdent;
+        d_deferred.append(def);
+    }
+
+    Type::Ref pointer_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_pointer_type);
+        Type::Ref t;
+        Symbol* sym = 0;
+        SynTree* id = 0;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Hat:
-                break;
             case SynTree::R_type_name:
-                type_name(sub);
+                if( sub->d_children.size() == 1 )
+                {
+                    id = sub->d_children.first();
+                    sym = addSym(d_scopes.back(),id->d_tok);
+                    t = resolvedType(sym);
+                }
                 break;
             }
         }
+        Type::Ref ptr(new Type());
+        ptr->d_kind = Type::Pointer;
+        ptr->d_type = t;
+
+        if( t.data() == 0 || sym == 0 || sym->d_decl == 0 )
+            defer( sym, ptr.data(), d_scopes.back(), id );
+        return ptr;
     }
 
-    void procedural_type(SynTree* st) {
+    Type::Ref procedural_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_procedural_type);
+        Type::Ref res(new Type());
+        res->d_kind = Type::Procedural;
+        res->d_members = new Scope();
+        res->d_members->d_kind = Thing::Members;
+        res->d_members->d_outer = d_scopes.back();
+        d_scopes.push_back(res->d_members);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
@@ -1214,6 +1257,8 @@ private:
                 break;
             }
         }
+        d_scopes.pop_back();
+        return res;
     }
 
     void func_proc_header(SynTree* st) {
@@ -1221,14 +1266,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_function:
-                break;
-            case Tok_procedure:
-                break;
             case SynTree::R_formal_parameter_list:
                 formal_parameter_list(sub);
-                break;
-            case Tok_Colon:
                 break;
             case SynTree::R_result_type:
                 result_type(sub);
@@ -1241,6 +1280,7 @@ private:
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_call_modifiers);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
+            // NOP
             switch(sub->d_tok.d_type) {
             case Tok_inline:
                 break;
@@ -1260,18 +1300,16 @@ private:
 
     void variable_declaration(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_variable_declaration);
+        Type::Ref t;
+        TokenList ids;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_identifier_list:
-                identifier_list(sub);
-                break;
-            case Tok_Colon:
+                ids = identifier_list(sub);
                 break;
             case SynTree::R_type_:
-                type_(sub);
-                break;
-            case Tok_Eq:
+                t = type_(sub);
                 break;
             case SynTree::R_expression:
                 expression(sub);
@@ -1282,9 +1320,12 @@ private:
             case SynTree::R_hintdirectives:
                 hintdirectives(sub);
                 break;
-            case Tok_Semi:
-                break;
             }
+        }
+        foreach( const Token& id, ids )
+        {
+            Declaration* d = addDecl(id, Thing::Var);
+            d->d_type = t;
         }
     }
 
@@ -1304,6 +1345,7 @@ private:
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_variable_modifier_);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
+            // NOP
             switch(sub->d_tok.d_type) {
             case Tok_absolute:
                 break;
@@ -1329,16 +1371,28 @@ private:
 
     void property_definition(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_property_definition);
+        Declaration* d = 0;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_ident:
+                {
+                    d = addDecl(sub->d_tok, Thing::Property);
+                    d->d_body = new Scope();
+                    d->d_body->d_kind = Thing::Body;
+                    d->d_body->d_owner = d;
+                    d->d_body->d_outer = d_scopes.back();
+                }
                 break;
             case SynTree::R_property_interface:
+                d_scopes.push_back(d->d_body);
                 property_interface(sub);
+                d_scopes.pop_back();
                 break;
             case SynTree::R_property_specifiers:
+                d_scopes.push_back(d->d_body);
                 property_specifiers(sub);
+                d_scopes.pop_back();
                 break;
             }
         }
@@ -1352,12 +1406,8 @@ private:
             case SynTree::R_property_parameter_list:
                 property_parameter_list(sub);
                 break;
-            case Tok_Colon:
-                break;
             case SynTree::R_type_name:
                 type_name(sub);
-                break;
-            case Tok_index:
                 break;
             case SynTree::R_integer_constant:
                 integer_constant(sub);
@@ -1371,14 +1421,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Lbrack:
-                break;
             case SynTree::R_parameter_declaration:
                 parameter_declaration(sub);
-                break;
-            case Tok_Semi:
-                break;
-            case Tok_Rbrack:
                 break;
             }
         }
@@ -1421,8 +1465,6 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_write:
-                break;
             case SynTree::R_field_or_procedure:
                 field_or_procedure(sub);
                 break;
@@ -1435,12 +1477,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_default:
-                break;
             case SynTree::R_constant:
                 constant(sub);
-                break;
-            case Tok_nodefault:
                 break;
             }
         }
@@ -1452,7 +1490,7 @@ private:
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_qualifier:
-                qualifier(sub);
+                resolveMember( qualifier(sub), d_scopes.back() );
                 break;
             }
         }
@@ -1464,49 +1502,55 @@ private:
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_qualifier:
-                qualifier(sub);
+                resolveMember( qualifier(sub), d_scopes.back() );
                 break;
             }
         }
     }
 
-    void object_type(SynTree* st) {
+    Type::Ref object_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_object_type);
+        Type::Ref res(new Type());
+        res->d_kind = Type::Class;
+        res->d_members = new Scope();
+        res->d_members->d_kind = Thing::Members;
+        res->d_members->d_outer = d_scopes.back();
+        d_scopes.push_back(res->d_members);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_object:
-                break;
-            case Tok_abstract:
-                break;
-            case Tok_sealed:
-                break;
             case SynTree::R_heritage:
-                heritage(sub);
+                {
+                    Type::Ref super = heritage(sub);
+                    if( super && super->d_kind == Type::Class )
+                    {
+                        res->d_type = super;
+                        res->d_members->d_altOuter = d_scopes.back();
+                        res->d_members->d_outer = super->d_members;
+                    }
+                }
                 break;
             case SynTree::R_component_list:
                 component_list(sub);
                 break;
-            case Tok_end:
-                break;
             }
         }
+        d_scopes.pop_back();
+        return res;
     }
 
-    void heritage(SynTree* st) {
+    Type::Ref heritage(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_heritage);
+        Type::Ref res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Lpar:
-                break;
             case SynTree::R_type_name:
-                type_name(sub);
-                break;
-            case Tok_Rpar:
+                res = type_name(sub);
                 break;
             }
         }
+        return res;
     }
 
     void component_list(SynTree* st) {
@@ -1535,26 +1579,23 @@ private:
 
     void field_definition(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_field_definition);
+        TokenList ids;
+        Type::Ref tp;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_class:
-                break;
-            case Tok_var:
-                break;
             case SynTree::R_identifier_list:
-                identifier_list(sub);
-                break;
-            case Tok_Colon:
+                ids = identifier_list(sub);
                 break;
             case SynTree::R_type_:
-                type_(sub);
-                break;
-            case Tok_Semi:
-                break;
-            case Tok_static:
+                tp = type_(sub);
                 break;
             }
+        }
+        foreach( const Token& t, ids )
+        {
+            Declaration* d = addDecl(t, Thing::Field);
+            d->d_type = tp;
         }
     }
 
@@ -1563,16 +1604,11 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_const:
-                break;
             case Tok_ident:
-                break;
-            case Tok_Eq:
+                addDecl(sub->d_tok, Thing::Const);
                 break;
             case SynTree::R_constant_expression:
                 constant_expression(sub);
-                break;
-            case Tok_Semi:
                 break;
             }
         }
@@ -1582,6 +1618,7 @@ private:
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_object_visibility_specifier);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
+            // NOP
             switch(sub->d_tok.d_type) {
             case Tok_private:
                 break;
@@ -1595,16 +1632,19 @@ private:
 
     void constructor_declaration(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_constructor_declaration);
+        Declaration* d = 0;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_constructor_header:
-                constructor_header(sub);
-                break;
-            case Tok_Semi:
+                d = constructor_header(sub, true);
                 break;
             case SynTree::R_subroutine_block:
+                if( d )
+                    d_scopes.push_back(d->d_body);
                 subroutine_block(sub);
+                if( d )
+                    d_scopes.pop_back();
                 break;
             }
         }
@@ -1612,53 +1652,62 @@ private:
 
     void destructor_declaration(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_destructor_declaration);
+        Declaration* d = 0;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_destructor_header:
-                destructor_header(sub);
+                d = destructor_header(sub, true);
                 break;
             case Tok_Semi:
                 break;
             case SynTree::R_subroutine_block:
+                if( d )
+                    d_scopes.push_back(d->d_body);
                 subroutine_block(sub);
+                if( d )
+                    d_scopes.pop_back();
                 break;
             }
         }
     }
 
-    void constructor_header(SynTree* st) {
+    Declaration* constructor_header(SynTree* st, bool impl = false) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_constructor_header);
+        Declaration* d = 0;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_constructor:
-                break;
             case SynTree::R_qualifier:
-                qualifier(sub);
+                d = createProcDecl(qualifier(sub), Thing::Proc, impl);
                 break;
             case SynTree::R_formal_parameter_list:
+                d_scopes.push_back(d->d_body);
                 formal_parameter_list(sub);
+                d_scopes.pop_back();
                 break;
             }
         }
+        return d;
     }
 
-    void destructor_header(SynTree* st) {
+    Declaration* destructor_header(SynTree* st, bool impl = false) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_destructor_header);
+        Declaration* d = 0;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_destructor:
-                break;
             case SynTree::R_qualifier:
-                qualifier(sub);
+                d = createProcDecl(qualifier(sub),Thing::Proc,impl);
                 break;
             case SynTree::R_formal_parameter_list:
+                d_scopes.push_back(d->d_body);
                 formal_parameter_list(sub);
+                d_scopes.pop_back();
                 break;
             }
         }
+        return d;
     }
 
     void method_definition(SynTree* st) {
@@ -1666,21 +1715,17 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_class:
-                break;
             case SynTree::R_function_header:
-                function_header(sub);
+                function_procedure_header(sub, Thing::Func);
                 break;
             case SynTree::R_procedure_header:
-                procedure_header(sub);
+                function_procedure_header(sub, Thing::Proc);
                 break;
             case SynTree::R_constructor_header:
                 constructor_header(sub);
                 break;
             case SynTree::R_destructor_header:
                 destructor_header(sub);
-                break;
-            case Tok_Semi:
                 break;
             case SynTree::R_method_directives:
                 method_directives(sub);
@@ -1694,6 +1739,7 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
+            // NOP
             case Tok_virtual:
                 break;
             case Tok_Semi:
@@ -1709,46 +1755,53 @@ private:
         }
     }
 
-    void class_type(SynTree* st) {
+    Type::Ref class_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_class_type);
+        Type::Ref res(new Type());
+        res->d_kind = Type::Class;
+        res->d_members = new Scope();
+        res->d_members->d_kind = Thing::Members;
+        res->d_members->d_outer = d_scopes.back();
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_class:
-                break;
-            case Tok_abstract:
-                break;
-            case Tok_sealed:
-                break;
             case SynTree::R_heritage2:
-                heritage2(sub);
+                {
+                    Type::Ref super = heritage2(sub);
+                    if( super && super->d_kind == Type::Class )
+                    {
+                        res->d_type = super;
+                        res->d_members->d_altOuter = d_scopes.back();
+                        res->d_members->d_outer = super->d_members;
+                    }
+                }
                 break;
             case SynTree::R_component_list2:
+                d_scopes.push_back(res->d_members);
                 component_list2(sub);
-                break;
-            case Tok_end:
+                d_scopes.pop_back();
                 break;
             }
         }
+        return res;
     }
 
-    void heritage2(SynTree* st) {
+    Type::Ref heritage2(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_heritage2);
+        Type::Ref res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Lpar:
-                break;
             case SynTree::R_type_name:
-                type_name(sub);
+                res = type_name(sub);
                 break;
             case SynTree::R_implemented_interfaces:
+                // TODO: is this scope required?
                 implemented_interfaces(sub);
-                break;
-            case Tok_Rpar:
                 break;
             }
         }
+        return res;
     }
 
     void implemented_interfaces(SynTree* st) {
@@ -1756,9 +1809,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Comma:
-                break;
             case Tok_ident:
+                addSym(d_scopes.back(),sub->d_tok);
                 break;
             }
         }
@@ -1793,8 +1845,6 @@ private:
             case SynTree::R_type_declaration_part:
                 type_declaration_part(sub);
                 break;
-            case Tok_class:
-                break;
             case SynTree::R_variable_declaration_part:
                 variable_declaration_part(sub);
                 break;
@@ -1812,6 +1862,7 @@ private:
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_class_visibility_specifier);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
+            // NOP
             switch(sub->d_tok.d_type) {
             case Tok_public:
                 break;
@@ -1833,18 +1884,16 @@ private:
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_function_header:
-                function_header(sub);
+                function_procedure_header(sub, Thing::Func);
                 break;
             case SynTree::R_procedure_header:
-                procedure_header(sub);
+                function_procedure_header(sub, Thing::Proc);
                 break;
             case SynTree::R_constructor_header:
                 constructor_header(sub);
                 break;
             case SynTree::R_destructor_header:
                 destructor_header(sub);
-                break;
-            case Tok_Semi:
                 break;
             case SynTree::R_method_directives2:
                 method_directives2(sub);
@@ -1861,6 +1910,7 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
+            // NOP
             case Tok_virtual:
                 break;
             case Tok_dynamic:
@@ -1895,44 +1945,53 @@ private:
 
     void field_definition2(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_field_definition2);
+        TokenList ids;
+        Type::Ref tp;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_identifier_list:
-                identifier_list(sub);
-                break;
-            case Tok_Colon:
+                ids = identifier_list(sub);
                 break;
             case SynTree::R_type_:
-                type_(sub);
-                break;
-            case Tok_Semi:
-                break;
-            case Tok_static:
+                tp = type_(sub);
                 break;
             }
+        }
+        foreach( const Token& t, ids )
+        {
+            Declaration* d = addDecl(t, Thing::Field);
+            d->d_type = tp;
         }
     }
 
     void property_definition2(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_property_definition2);
+        Declaration* d = 0;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_property:
-                break;
             case Tok_ident:
+                {
+                    d = addDecl(sub->d_tok, Thing::Property);
+                    d->d_body = new Scope();
+                    d->d_body->d_kind = Thing::Body;
+                    d->d_body->d_owner = d;
+                    d->d_body->d_outer = d_scopes.back();
+                }
                 break;
             case SynTree::R_property_interface:
+                d_scopes.push_back(d->d_body);
                 property_interface(sub);
+                d_scopes.pop_back();
                 break;
             case SynTree::R_property_specifiers2:
+                d_scopes.push_back(d->d_body);
                 property_specifiers2(sub);
+                d_scopes.pop_back();
                 break;
             case SynTree::R_hintdirectives:
                 hintdirectives(sub);
-                break;
-            case Tok_Semi:
                 break;
             }
         }
@@ -1970,11 +2029,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_implements:
-                break;
             case Tok_ident:
-                break;
-            case Tok_Comma:
+                addSym(d_scopes.back(),sub->d_tok);
                 break;
             }
         }
@@ -1999,34 +2055,47 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Semi:
-                break;
+            // NOP
             case Tok_default:
                 break;
             }
         }
     }
 
-    void interface_type(SynTree* st) {
+    Type::Ref interface_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_interface_type);
+        Type::Ref res(new Type());
+        res->d_kind = Type::Class;
+        res->d_members = new Scope();
+        res->d_members->d_kind = Thing::Members;
+        res->d_members->d_outer = d_scopes.back();
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_interface:
-                break;
             case SynTree::R_heritage:
-                heritage(sub);
+                {
+                    Type::Ref super = heritage(sub);
+                    if( super && super->d_kind == Type::Class )
+                    {
+                        res->d_type = super;
+                        res->d_members->d_altOuter = d_scopes.back();
+                        res->d_members->d_outer = super->d_members;
+                    }
+                }
                 break;
             case SynTree::R_guid:
                 guid(sub);
                 break;
             case SynTree::R_component_list2:
+                d_scopes.push_back(res->d_members);
                 component_list2(sub);
+                d_scopes.pop_back();
                 break;
             case Tok_end:
                 break;
             }
         }
+        return res;
     }
 
     void guid(SynTree* st) {
@@ -2034,35 +2103,31 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Lbrack:
-                break;
             case SynTree::R_string_constant:
                 string_constant(sub);
                 break;
-            case Tok_Rbrack:
-                break;
             }
         }
     }
 
-    void class_reference_type(SynTree* st) {
+    Type::Ref class_reference_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_class_reference_type);
+        Type::Ref res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_class:
-                break;
-            case Tok_of:
-                break;
             case SynTree::R_type_name:
-                type_name(sub);
+                res = type_name(sub);
                 break;
             }
         }
+        return res;
     }
 
-    void generic_type(SynTree* st) {
+    // TODO
+    Type::Ref generic_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_generic_type);
+        Type::Ref res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
@@ -2086,6 +2151,7 @@ private:
                 break;
             }
         }
+        return res;
     }
 
     void template_list(SynTree* st) {
@@ -2156,8 +2222,9 @@ private:
         }
     }
 
-    void specialized_type(SynTree* st) {
+    Type::Ref specialized_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_specialized_type);
+        Type::Ref res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
@@ -2174,6 +2241,7 @@ private:
                 break;
             }
         }
+        return res;
     }
 
     void type_name_list(SynTree* st) {
@@ -2190,8 +2258,9 @@ private:
         }
     }
 
-    void helper_type(SynTree* st) {
+    Type::Ref helper_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_helper_type);
+        Type::Ref res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
@@ -2224,6 +2293,7 @@ private:
                 break;
             }
         }
+        return res;
     }
 
     void helper_component_list(SynTree* st) {
@@ -2260,6 +2330,7 @@ private:
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_relop);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
+            // NOP
             switch(sub->d_tok.d_type) {
             case Tok_Lt:
                 break;
@@ -2312,6 +2383,7 @@ private:
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_adop);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
+            // NOP
             switch(sub->d_tok.d_type) {
             case Tok_Plus:
                 break;
@@ -2346,6 +2418,7 @@ private:
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_mulop);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
+            // NOP
             switch(sub->d_tok.d_type) {
             case Tok_Star:
                 break;
@@ -2380,7 +2453,7 @@ private:
                 nested_expr_or_structured_const(sub);
                 break;
             case SynTree::R_selector:
-                selector(sub);
+                selector(sub,0); // TODO
                 break;
             case SynTree::R_varref_or_funcall_or_constid_or_cast:
                 varref_or_funcall_or_constid_or_cast(sub);
@@ -2426,16 +2499,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Lpar:
-                break;
             case SynTree::R_element:
                 element(sub);
-                break;
-            case Tok_Comma:
-                break;
-            case Tok_Semi:
-                break;
-            case Tok_Rpar:
                 break;
             }
         }
@@ -2447,8 +2512,7 @@ private:
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_ident:
-                break;
-            case Tok_Colon:
+                // TODO
                 break;
             case SynTree::R_expression:
                 expression(sub);
@@ -2478,6 +2542,7 @@ private:
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_sign);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
+            // NOP
             switch(sub->d_tok.d_type) {
             case Tok_Plus:
                 break;
@@ -2492,14 +2557,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Lpar:
-                break;
             case SynTree::R_expression:
                 expression(sub);
-                break;
-            case Tok_Comma:
-                break;
-            case Tok_Rpar:
                 break;
             }
         }
@@ -2510,14 +2569,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Lbrack:
-                break;
             case SynTree::R_set_group:
                 set_group(sub);
-                break;
-            case Tok_Comma:
-                break;
-            case Tok_Rbrack:
                 break;
             }
         }
@@ -2542,8 +2595,6 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_At:
-                break;
             case SynTree::R_designator:
                 designator(sub);
                 break;
@@ -2573,8 +2624,6 @@ private:
             switch(sub->d_tok.d_type) {
             case SynTree::R_label_def:
                 label_def(sub);
-                break;
-            case Tok_Colon:
                 break;
             case SynTree::R_simple_statement:
                 simple_statement(sub);
@@ -2622,7 +2671,7 @@ private:
                 nested_expr_or_structured_const(sub);
                 break;
             case SynTree::R_selector:
-                selector(sub);
+                selector(sub, 0); // TODO
                 break;
             case SynTree::R_assigop:
                 assigop(sub);
@@ -2639,9 +2688,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_inherited:
-                break;
             case Tok_ident:
+                // TODO
                 break;
             case SynTree::R_actual_parameter_list:
                 actual_parameter_list(sub);
@@ -2654,6 +2702,7 @@ private:
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_assigop);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
+            // NOP
             switch(sub->d_tok.d_type) {
             case Tok_ColonEq:
                 break;
@@ -2674,8 +2723,6 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_goto:
-                break;
             case SynTree::R_label_def:
                 label_def(sub);
                 break;
@@ -2745,12 +2792,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_begin:
-                break;
             case SynTree::R_statement_list:
                 statement_list(sub);
-                break;
-            case Tok_end:
                 break;
             }
         }
@@ -2764,8 +2807,6 @@ private:
             case SynTree::R_statement:
                 statement(sub);
                 break;
-            case Tok_Semi:
-                break;
             }
         }
     }
@@ -2775,22 +2816,14 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_case:
-                break;
             case SynTree::R_expression:
                 expression(sub);
-                break;
-            case Tok_of:
                 break;
             case SynTree::R_case_part:
                 case_part(sub);
                 break;
-            case Tok_Semi:
-                break;
             case SynTree::R_else_part:
                 else_part(sub);
-                break;
-            case Tok_end:
                 break;
             }
         }
@@ -2803,10 +2836,6 @@ private:
             switch(sub->d_tok.d_type) {
             case SynTree::R_case_range:
                 case_range(sub);
-                break;
-            case Tok_Comma:
-                break;
-            case Tok_Colon:
                 break;
             case SynTree::R_statement:
                 statement(sub);
@@ -2823,8 +2852,6 @@ private:
             case SynTree::R_constant_expression:
                 constant_expression(sub);
                 break;
-            case Tok_2Dot:
-                break;
             }
         }
     }
@@ -2834,10 +2861,6 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_else:
-                break;
-            case Tok_otherwise:
-                break;
             case SynTree::R_statement_list:
                 statement_list(sub);
                 break;
@@ -2850,17 +2873,11 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_if:
-                break;
             case SynTree::R_expression:
                 expression(sub);
                 break;
-            case Tok_then:
-                break;
             case SynTree::R_statement:
                 statement(sub);
-                break;
-            case Tok_else:
                 break;
             }
         }
@@ -2871,29 +2888,17 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_for:
-                break;
             case SynTree::R_control_variable:
                 control_variable(sub);
-                break;
-            case Tok_ColonEq:
                 break;
             case SynTree::R_initial_value:
                 initial_value(sub);
                 break;
-            case Tok_to:
-                break;
-            case Tok_downto:
-                break;
             case SynTree::R_final_value:
                 final_value(sub);
                 break;
-            case Tok_in:
-                break;
             case SynTree::R_enumerable:
                 enumerable(sub);
-                break;
-            case Tok_do:
                 break;
             case SynTree::R_statement:
                 statement(sub);
@@ -2961,12 +2966,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_repeat:
-                break;
             case SynTree::R_statement_list:
                 statement_list(sub);
-                break;
-            case Tok_until:
                 break;
             case SynTree::R_expression:
                 expression(sub);
@@ -2980,12 +2981,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_while:
-                break;
             case SynTree::R_expression:
                 expression(sub);
-                break;
-            case Tok_do:
                 break;
             case SynTree::R_statement:
                 statement(sub);
@@ -2999,14 +2996,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_with:
-                break;
             case SynTree::R_variable_reference:
                 variable_reference(sub);
-                break;
-            case Tok_Comma:
-                break;
-            case Tok_do:
                 break;
             case SynTree::R_statement:
                 statement(sub);
@@ -3020,10 +3011,6 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_asm:
-                break;
-            case Tok_end:
-                break;
             case SynTree::R_register_list:
                 register_list(sub);
                 break;
@@ -3036,14 +3023,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Lbrack:
-                break;
             case SynTree::R_string_constant:
                 string_constant(sub);
-                break;
-            case Tok_Comma:
-                break;
-            case Tok_Rbrack:
                 break;
             }
         }
@@ -3051,39 +3032,17 @@ private:
 
     void procedure_declaration(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_procedure_declaration);
+        Declaration* d = 0;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_procedure_header:
-                procedure_header(sub);
-                break;
-            case Tok_Semi:
+                d = function_procedure_header(sub, Thing::Proc, true);
                 break;
             case SynTree::R_subroutine_block:
+                d_scopes.push_back(d->d_body);
                 subroutine_block(sub);
-                break;
-            }
-        }
-    }
-
-    void procedure_header(SynTree* st) {
-        Q_ASSERT(st && st->d_tok.d_type == SynTree::R_procedure_header);
-        for(int i = 0; i < st->d_children.size(); i++ ) {
-            SynTree* sub = st->d_children[i];
-            switch(sub->d_tok.d_type) {
-            case Tok_procedure:
-                break;
-            case SynTree::R_qualifier:
-                qualifier(sub);
-                break;
-            case SynTree::R_formal_parameter_list:
-                formal_parameter_list(sub);
-                break;
-            case SynTree::R_modifiers:
-                modifiers(sub);
-                break;
-            case SynTree::R_hintdirectives:
-                hintdirectives(sub);
+                d_scopes.pop_back();
                 break;
             }
         }
@@ -3111,38 +3070,55 @@ private:
 
     void function_declaration(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_function_declaration);
+        Declaration* d = 0;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_function_header:
-                function_header(sub);
-                break;
-            case Tok_Semi:
+                d = function_procedure_header(sub, Thing::Func, true);
                 break;
             case SynTree::R_subroutine_block:
+                d_scopes.push_back(d->d_body);
                 subroutine_block(sub);
+                d_scopes.pop_back();
                 break;
             }
         }
     }
 
-    void function_header(SynTree* st) {
-        Q_ASSERT(st && st->d_tok.d_type == SynTree::R_function_header);
+    Declaration* function_procedure_header(SynTree* st, int kind, bool impl = false) {
+        Q_ASSERT(st && (st->d_tok.d_type == SynTree::R_function_header || st->d_tok.d_type == SynTree::R_procedure_header));
+        Declaration* d = 0;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_function:
-                break;
             case SynTree::R_qualifier:
-                qualifier(sub);
+                d = createProcDecl(qualifier(sub), kind, impl);
                 break;
             case SynTree::R_formal_parameter_list:
+                d_scopes.push_back(d->d_body);
                 formal_parameter_list(sub);
-                break;
-            case Tok_Colon:
+                d_scopes.pop_back();
                 break;
             case SynTree::R_result_type:
-                result_type(sub);
+                {
+                    Type::Ref t = result_type(sub);
+                    if( d )
+                    {
+                        d->d_type = t;
+                        if( impl && kind == Thing::Func )
+                        {
+                            Token tmp;
+                            tmp.d_val = "result";
+                            tmp.d_lineNr = d->d_loc.d_pos.d_row;
+                            tmp.d_colNr = d->d_loc.d_pos.d_col;
+                            tmp.d_sourcePath = d->d_loc.d_filePath;
+                            tmp.d_id = Token::toId(tmp.d_val);
+                            Declaration* result = addDecl(d->d_body,tmp,Thing::Var);
+                            result->d_type = t;
+                        }
+                    }
+                }
                 break;
             case SynTree::R_modifiers:
                 modifiers(sub);
@@ -3152,6 +3128,7 @@ private:
                 break;
             }
         }
+        return d;
     }
 
     void formal_parameter_list(SynTree* st) {
@@ -3159,14 +3136,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Lpar:
-                break;
             case SynTree::R_parameter_declaration:
                 parameter_declaration(sub);
-                break;
-            case Tok_Semi:
-                break;
-            case Tok_Rpar:
                 break;
             }
         }
@@ -3195,106 +3166,110 @@ private:
 
     void value_parameter(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_value_parameter);
+        TokenList ids;
+        Type::Ref t;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_identifier_list:
-                identifier_list(sub);
-                break;
-            case Tok_Colon:
+                ids = identifier_list(sub);
                 break;
             case SynTree::R_parameter_type:
-                parameter_type(sub);
-                break;
-            case Tok_Eq:
+                t = parameter_type(sub);
                 break;
             case SynTree::R_default_parameter_value:
                 default_parameter_value(sub);
                 break;
             }
         }
+        foreach( const Token& id, ids )
+        {
+            Declaration* d = addDecl(id, Thing::Param);
+            d->d_type = t;
+        }
     }
 
     void variable_parameter(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_variable_parameter);
+        TokenList ids;
+        Type::Ref t;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_var:
-                break;
             case SynTree::R_identifier_list:
-                identifier_list(sub);
-                break;
-            case Tok_Colon:
+                ids = identifier_list(sub);
                 break;
             case SynTree::R_parameter_type:
-                parameter_type(sub);
+                t = parameter_type(sub);
                 break;
             }
+        }
+        foreach( const Token& id, ids )
+        {
+            Declaration* d = addDecl(id, Thing::Param);
+            d->d_type = t;
         }
     }
 
     void out_parameter(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_out_parameter);
+        TokenList ids;
+        Type::Ref t;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_out:
-                break;
             case SynTree::R_identifier_list:
-                identifier_list(sub);
-                break;
-            case Tok_Colon:
+                ids = identifier_list(sub);
                 break;
             case SynTree::R_parameter_type:
-                parameter_type(sub);
+                t = parameter_type(sub);
                 break;
             }
+        }
+        foreach( const Token& id, ids )
+        {
+            Declaration* d = addDecl(id, Thing::Param);
+            d->d_type = t;
         }
     }
 
     void constant_parameter(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_constant_parameter);
+        TokenList ids;
+        Type::Ref t;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_const:
-                break;
-            case Tok_constref:
-                break;
             case SynTree::R_identifier_list:
-                identifier_list(sub);
-                break;
-            case Tok_Colon:
+                ids = identifier_list(sub);
                 break;
             case SynTree::R_parameter_type:
-                parameter_type(sub);
-                break;
-            case Tok_Eq:
+                t = parameter_type(sub);
                 break;
             case SynTree::R_expression:
                 expression(sub);
                 break;
             }
         }
+        foreach( const Token& id, ids )
+        {
+            Declaration* d = addDecl(id, Thing::Param);
+            d->d_type = t;
+        }
     }
 
-    void parameter_type(SynTree* st) {
+    Type::Ref parameter_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_parameter_type);
+        Type::Ref res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_array:
-                break;
-            case Tok_of:
-                break;
             case SynTree::R_type_name:
-                type_name(sub);
-                break;
-            case Tok_const:
+                res = type_name(sub);
                 break;
             }
         }
+        return res;
     }
 
     void external_directive(SynTree* st) {
@@ -3302,14 +3277,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_external:
-                break;
             case SynTree::R_string_constant:
                 string_constant(sub);
-                break;
-            case Tok_name:
-                break;
-            case Tok_index:
                 break;
             case SynTree::R_integer_constant:
                 integer_constant(sub);
@@ -3323,10 +3292,6 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_assembler:
-                break;
-            case Tok_Semi:
-                break;
             case SynTree::R_declaration_part:
                 declaration_part(sub);
                 break;
@@ -3339,8 +3304,6 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Semi:
-                break;
             case SynTree::R_modifier:
                 modifier(sub);
                 break;
@@ -3352,6 +3315,7 @@ private:
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_modifier);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
+            // NOP
             switch(sub->d_tok.d_type) {
             case Tok_export:
                 break;
@@ -3412,184 +3376,178 @@ private:
         }
     }
 
-    void operator_header(SynTree* st) {
+    Declaration* operator_header(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_operator_header);
+        Declaration* d = new Declaration();
+        d->d_kind = Thing::Proc;
+        d->d_owner = d_scopes.back();
+        d->d_body = new Scope();
+        d->d_body->d_kind = Thing::Body;
+        d->d_body->d_owner = d;
+        d->d_body->d_outer = d_scopes.back();
+        d_scopes.back()->d_order.append(d);
+        d_scopes.push_back(d->d_body);
+        Declaration* var = 0;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_operator:
-                break;
             case SynTree::R_assignment_operator_definition:
-                assignment_operator_definition(sub);
+                assignment_operator_definition(sub, d);
                 break;
             case SynTree::R_arithmetic_operator_definition:
-                arithmetic_operator_definition(sub);
+                arithmetic_operator_definition(sub, d);
                 break;
             case SynTree::R_comparison_operator_definition:
-                comparison_operator_definition(sub);
+                comparison_operator_definition(sub, d);
                 break;
             case SynTree::R_logical_operator_definition:
-                logical_operator_definition(sub);
+                logical_operator_definition(sub, d);
                 break;
             case SynTree::R_other_operator_definition:
-                other_operator_definition(sub);
+                other_operator_definition(sub, d);
                 break;
             case SynTree::R_result_identifier:
-                result_identifier(sub);
-                break;
-            case Tok_Colon:
+                {
+                    Token id = result_identifier(sub);
+                    var = addDecl(id, Thing::Var);
+                }
                 break;
             case SynTree::R_result_type:
-                result_type(sub);
+                d->d_type = result_type(sub);
+                d->d_kind = Thing::Func;
+                if( var )
+                    var->d_type = d->d_type;
                 break;
             }
         }
+        d_scopes.pop_back();
+        return d;
     }
 
     void operator_definition(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_operator_definition);
+        Declaration* d = 0;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_operator_header:
-                operator_header(sub);
-                break;
-            case Tok_Semi:
+                d = operator_header(sub);
                 break;
             case SynTree::R_subroutine_block:
+                d_scopes.push_back(d->d_body);
                 subroutine_block(sub);
+                d_scopes.pop_back();
                 break;
             }
         }
     }
 
-    void assignment_operator_definition(SynTree* st) {
+    void assignment_operator_definition(SynTree* st, Declaration* d) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_assignment_operator_definition);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_ColonEq:
-                break;
             case Tok_explicit:
-                break;
-            case Tok_Lpar:
+                d->d_name = sub->d_tok.d_val;
+                d->d_loc.d_pos = sub->d_tok.toLoc();
+                d->d_loc.d_filePath = sub->d_tok.d_sourcePath;
+                d->d_id = sub->d_tok.d_id;
                 break;
             case SynTree::R_parameter_list:
                 parameter_list(sub);
-                break;
-            case Tok_Rpar:
                 break;
             }
         }
     }
 
-    void arithmetic_operator_definition(SynTree* st) {
+    void arithmetic_operator_definition(SynTree* st, Declaration* d) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_arithmetic_operator_definition);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_Plus:
-                break;
             case Tok_Minus:
-                break;
             case Tok_Star:
-                break;
             case Tok_Slash:
-                break;
             case Tok_2Star:
-                break;
             case Tok_GtLt:
-                break;
             case Tok_div:
-                break;
             case Tok_mod:
-                break;
             case Tok_shl:
-                break;
             case Tok_shr:
-                break;
-            case Tok_Lpar:
+                d->d_name = sub->d_tok.d_val;
+                d->d_loc.d_pos = sub->d_tok.toLoc();
+                d->d_loc.d_filePath = sub->d_tok.d_sourcePath;
+                d->d_id = sub->d_tok.d_id;
                 break;
             case SynTree::R_parameter_list:
                 parameter_list(sub);
-                break;
-            case Tok_Rpar:
                 break;
             }
         }
     }
 
-    void comparison_operator_definition(SynTree* st) {
+    void comparison_operator_definition(SynTree* st, Declaration* d) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_comparison_operator_definition);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_Eq:
-                break;
             case Tok_Lt:
-                break;
             case Tok_Leq:
-                break;
             case Tok_Gt:
-                break;
             case Tok_Geq:
-                break;
             case Tok_LtGt:
-                break;
             case Tok_in:
-                break;
-            case Tok_Lpar:
+                d->d_name = sub->d_tok.d_val;
+                d->d_loc.d_pos = sub->d_tok.toLoc();
+                d->d_loc.d_filePath = sub->d_tok.d_sourcePath;
+                d->d_id = sub->d_tok.d_id;
                 break;
             case SynTree::R_parameter_list:
                 parameter_list(sub);
-                break;
-            case Tok_Rpar:
                 break;
             }
         }
     }
 
-    void logical_operator_definition(SynTree* st) {
+    void logical_operator_definition(SynTree* st, Declaration* d) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_logical_operator_definition);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_and:
-                break;
             case Tok_or:
-                break;
             case Tok_xor:
-                break;
             case Tok_not:
-                break;
-            case Tok_Lpar:
+                d->d_name = sub->d_tok.d_val;
+                d->d_loc.d_pos = sub->d_tok.toLoc();
+                d->d_loc.d_filePath = sub->d_tok.d_sourcePath;
+                d->d_id = sub->d_tok.d_id;
                 break;
             case SynTree::R_parameter_list:
                 parameter_list(sub);
-                break;
-            case Tok_Rpar:
                 break;
             }
         }
     }
 
-    void other_operator_definition(SynTree* st) {
+    void other_operator_definition(SynTree* st, Declaration* d) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_other_operator_definition);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_enumerator:
-                break;
             case Tok_inc:
-                break;
             case Tok_dec:
-                break;
-            case Tok_Lpar:
+                d->d_name = sub->d_tok.d_val;
+                d->d_loc.d_pos = sub->d_tok.toLoc();
+                d->d_loc.d_filePath = sub->d_tok.d_sourcePath;
+                d->d_id = sub->d_tok.d_id;
                 break;
             case SynTree::R_parameter_list:
                 parameter_list(sub);
-                break;
-            case Tok_Rpar:
                 break;
             }
         }
@@ -3600,8 +3558,6 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_raise:
-                break;
             case SynTree::R_exception_instance:
                 exception_instance(sub);
                 break;
@@ -3617,12 +3573,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_at:
-                break;
             case SynTree::R_address_expression:
                 address_expression(sub);
-                break;
-            case Tok_Comma:
                 break;
             }
         }
@@ -3633,19 +3585,11 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_try:
-                break;
             case SynTree::R_statement_list:
                 statement_list(sub);
                 break;
-            case Tok_except:
-                break;
             case SynTree::R_exceptionhandlers:
                 exceptionhandlers(sub);
-                break;
-            case Tok_finally:
-                break;
-            case Tok_end:
                 break;
             }
         }
@@ -3662,10 +3606,6 @@ private:
             case SynTree::R_exception_handler:
                 exception_handler(sub);
                 break;
-            case Tok_Semi:
-                break;
-            case Tok_else:
-                break;
             }
         }
     }
@@ -3675,16 +3615,11 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_on:
-                break;
             case Tok_ident:
-                break;
-            case Tok_Colon:
+                // TODO: if there is an ident this is in fact a local var declaration which requires a local scope!
                 break;
             case SynTree::R_type_name:
                 type_name(sub);
-                break;
-            case Tok_do:
                 break;
             case SynTree::R_statement:
                 statement(sub);
@@ -3729,16 +3664,18 @@ private:
         }
     }
 
-    void result_type(SynTree* st) {
+    Type::Ref result_type(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_result_type);
+        Type::Ref res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case SynTree::R_type_:
-                type_(sub);
+                res = type_(sub);
                 break;
             }
         }
+        return res;
     }
 
     void property_declaration_part(SynTree* st) {
@@ -3746,12 +3683,8 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_property:
-                break;
             case SynTree::R_property_definition:
                 property_definition(sub);
-                break;
-            case Tok_Semi:
                 break;
             }
         }
@@ -3769,15 +3702,18 @@ private:
         }
     }
 
-    void result_identifier(SynTree* st) {
+    Token result_identifier(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_result_identifier);
+        Token id;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_ident:
+                id = sub->d_tok;
                 break;
             }
         }
+        return id;
     }
 
     void variable_reference(SynTree* st) {
@@ -3798,6 +3734,7 @@ private:
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_ident:
+                addSym(d_scopes.back(), sub->d_tok);
                 break;
             }
         }
@@ -3810,8 +3747,6 @@ private:
             switch(sub->d_tok.d_type) {
             case SynTree::R_parameter_declaration:
                 parameter_declaration(sub);
-                break;
-            case Tok_Semi:
                 break;
             }
         }
@@ -3841,6 +3776,7 @@ private:
                 string_constant(sub);
                 break;
             case Tok_ident:
+                addSym(d_scopes.back(), sub->d_tok);
                 break;
             }
         }
@@ -3852,7 +3788,8 @@ private:
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_ident:
-                break;
+                addSym(d_scopes.back(), sub->d_tok);
+               break;
             }
         }
     }
@@ -3863,13 +3800,10 @@ private:
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_ident:
-                break;
-            case Tok_Eq:
+                addDecl( sub->d_tok, Thing::Const);
                 break;
             case SynTree::R_string_constant:
                 string_constant(sub);
-                break;
-            case Tok_Semi:
                 break;
             }
         }
@@ -3892,8 +3826,6 @@ private:
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Colon:
-                break;
             case SynTree::R_unsigned_integer:
                 unsigned_integer(sub);
                 break;
@@ -3909,6 +3841,7 @@ private:
             case Tok_decimal_int:
                 break;
             case Tok_ident:
+                addDecl(sub->d_tok,Thing::Label);
                 break;
             }
         }
@@ -3975,15 +3908,21 @@ private:
 
     void designator(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_designator);
+        Type* t = 0;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_ident:
+                {
+                    Symbol* sym = addSym(d_scopes.back(),sub->d_tok);
+                    if( sym && sym->d_decl && sym->d_decl->isDeclaration() )
+                        t = static_cast<Declaration*>(sym->d_decl)->d_type.data();
+                }
                 break;
             case Tok_string:
                 break;
             case SynTree::R_selector:
-                selector(sub);
+                selector(sub, t);
                 break;
             case SynTree::R_subrange:
                 subrange(sub);
@@ -3992,45 +3931,257 @@ private:
         }
     }
 
-    void selector(SynTree* st) {
+    Type* selector(SynTree* st, Type* t) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_selector);
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
-            case Tok_Dot:
-                break;
             case Tok_ident:
-                break;
-            case Tok_Lbrack:
+                if( t && t->d_members )
+                {
+                    Symbol* sym = addSym(t->d_members,sub->d_tok);
+                    if( sym && sym->d_decl && sym->d_decl->isDeclaration() )
+                        t = static_cast<Declaration*>(sym->d_decl)->d_type.data();
+                }
                 break;
             case SynTree::R_expression:
+                // TODO
                 expression(sub);
                 break;
-            case Tok_Comma:
-                break;
-            case Tok_Rbrack:
-                break;
             case Tok_Hat:
+                // TODO
                 break;
             case SynTree::R_actual_parameter_list:
+                // TODO
                 actual_parameter_list(sub);
                 break;
             }
         }
+        return t;
     }
 
-    void qualifier(SynTree* st) {
+    TokenList qualifier(SynTree* st) {
         Q_ASSERT(st && st->d_tok.d_type == SynTree::R_qualifier);
+        TokenList res;
         for(int i = 0; i < st->d_children.size(); i++ ) {
             SynTree* sub = st->d_children[i];
             switch(sub->d_tok.d_type) {
             case Tok_ident:
+                res.append(sub->d_tok);
                 break;
             case Tok_Dot:
                 break;
             }
         }
+        return res;
     }
+
+    Declaration* addDecl(const Token& t, int type )
+    {
+        return addDecl( d_scopes.back(), t, type );
+    }
+
+    Declaration* addDecl(Scope* scope, const Token& t, int type )
+    {
+        Declaration* d = new Declaration();
+        d->d_kind = type;
+        d->d_name = t.d_val;
+        d->d_id = t.d_id;
+        if( type != Thing::MethBlock )
+        {
+            d->d_loc.d_pos = t.toLoc();
+            d->d_loc.d_filePath = t.d_sourcePath;
+        }
+        d->d_owner = scope;
+        scope->d_order.append(d);
+
+        const bool isFuncProc = type == Thing::Proc || type == Thing::Func;
+
+        if( isFuncProc && d_cf->d_intf && scope == d_cf->d_intf )
+            d_forwards.append(d);
+
+        if( type == Thing::MethBlock )
+            return d;
+
+        // each decl is also a symbol
+
+        Declaration* fwd = 0;
+
+        Symbol* sy = new Symbol();
+        sy->d_loc = t.toLoc();
+        d_cf->d_syms[t.d_sourcePath].append(sy);
+        d->d_me = sy;
+
+        if( isFuncProc && scope == d_cf->d_impl && ( fwd = findInForwards(t) ) )
+        {
+            // add the present symbol which points to the interface twin
+            sy->d_decl = fwd;
+            fwd->d_refs[t.d_sourcePath].append(sy);
+
+            d_redirect[d] = fwd;
+            fwd->d_impl = d;
+        }else if( isFuncProc && scope->d_kind == Thing::Members && ( fwd = findInMembers(scope->d_outer,t) ) )
+        {
+            sy->d_decl = fwd;
+            fwd->d_refs[t.d_sourcePath].append(sy);
+            fwd->d_impl = d;
+        }else
+        {
+            sy->d_decl = d;
+            d->d_refs[t.d_sourcePath].append(sy);
+        }
+
+        return d;
+    }
+
+    Declaration* findInForwards(const Token&t)
+    {
+        Declaration* res = 0;
+        foreach( Declaration* d, d_forwards )
+        {
+            if( d->d_id == t.d_id )
+            {
+                res = d;
+                break;
+            }
+        }
+        return res;
+    }
+
+    Declaration* findInMembers(Scope* scope, const Token&t)
+    {
+        Declaration* res = 0;
+        // if this is in a class declaration search there
+        foreach( Declaration* d, scope->d_order )
+        {
+            if( d->d_id == t.d_id )
+            {
+                res = d;
+                break;
+            }
+        }
+        return res;
+    }
+
+    Symbol* addSym(Scope* scope, const Token& t)
+    {
+        Declaration* d = scope->findDecl(t.d_id);
+#ifndef LISA_WITH_MISSING
+        if( d )
+#else
+        if( true )
+#endif
+        {
+            if( d && d_cf->d_kind == Thing::Unit )
+            {
+                QHash<Declaration*,Declaration*>::const_iterator intf = d_redirect.find(d);
+                if( intf != d_redirect.end() )
+                {
+                    d = intf.value(); // attach all refs to the interface declaration (otherwise they are not visible)
+                }
+            }
+            Symbol* sy = new Symbol();
+            sy->d_loc = t.toLoc();
+            d_cf->d_syms[t.d_sourcePath].append(sy);
+            sy->d_decl = d;
+            if( d )
+                d->d_refs[t.d_sourcePath].append(sy);
+            return sy;
+        }else
+            return 0;
+    }
+
+    Type::Ref resolvedType(Symbol* sym)
+    {
+        Type::Ref res;
+        if( sym && sym->d_decl && sym->d_decl->d_kind == Thing::TypeDecl )
+        {
+            Declaration* d = static_cast<Declaration*>(sym->d_decl);
+            res = d->d_type;
+        }
+        return res;
+    }
+
+    Symbol* type_identifier(Scope* scope, SynTree* st)
+    {
+        Symbol* res = 0;
+        foreach( SynTree* s, st->d_children )
+            if( s->d_tok.d_type == Tok_ident)
+                res = addSym(scope,s->d_tok);
+        return res;
+    }
+
+    Type* resolveMember( const TokenList& desig, Scope* scope )
+    {
+        Type* res = 0;
+        if( scope == 0 )
+            return 0;
+        foreach( const Token& tok, desig )
+        {
+            Symbol* sym = addSym(scope,tok);
+            if( sym && sym->d_decl && sym->d_decl->isDeclaration() )
+                res = static_cast<Declaration*>(sym->d_decl)->d_type.data();
+            else
+                res = 0;
+            if( res && res->d_members )
+                scope = res->d_members;
+        }
+        return res;
+    }
+
+    Declaration* createProcDecl(const TokenList& id, int kind, bool impl = false)
+    {
+        Scope* scope = d_scopes.back();
+
+        if( impl && id.size() > 1 )
+        {
+            Declaration* cls = 0;
+            Declaration* meths = 0;
+            cls = scope->findDecl(id.first().d_id);
+            if( cls && cls->d_kind == Thing::MethBlock )
+            {
+                // Method block already exists
+                meths = cls;
+                addSym(meths->d_body->d_outer,id.first());
+            }else if( cls && cls->d_type && cls->d_type->d_kind == Type::Class )
+            {
+                addSym(scope,id.first());
+
+                // Create Method block
+                meths = addDecl(scope, id.first() ,Thing::MethBlock);
+                meths->d_body = new Scope();
+                meths->d_body->d_kind = Thing::Members;
+                meths->d_body->d_outer = cls->d_type->d_members;
+                meths->d_body->d_altOuter = scope;
+
+                Token tmp;
+                tmp.d_val = "self";
+                // intenionally no loc or path in tmp
+                tmp.d_id = Token::toId(tmp.d_val);
+                Declaration* self = addDecl(meths->d_body,tmp,Thing::Self);
+                self->d_type = cls->d_type;
+            }
+            if( meths )
+                scope = meths->d_body;
+        }
+
+        // func or proc decl
+        Declaration* d = addDecl(scope, id.last(), kind);
+        d->d_body = new Scope();
+        d->d_body->d_kind = Thing::Body;
+        d->d_body->d_owner = d;
+        d->d_body->d_outer = scope;
+
+        if( d->d_me && d->d_me->d_decl != d )
+        {
+            Q_ASSERT(d->d_me->d_decl->isDeclaration());
+            Declaration* intf = static_cast<Declaration*>(d->d_me->d_decl);
+
+            d->d_body->d_altOuter = intf->d_body;
+        }
+        return d;
+    }
+
 };
 
 CodeModel::CodeModel(QObject *parent) : ItemModel(parent),d_sloc(0),d_errCount(0)
@@ -4241,10 +4392,7 @@ int ItemModel::rowCount(const QModelIndex& parent) const
 }
 
 
-class Lex
-        #ifdef _USE_EBNF_STUDIO_PARSER_
-        : public Scanner
-        #endif
+class Lex : public Scanner
 {
 public:
     PpLexer lex;
@@ -4699,7 +4847,6 @@ QVariant ModuleDetailMdl::data(const QModelIndex& index, int role) const
         case Thing::Proc:
             return QPixmap(":/images/procedure.png");
         case Thing::Label:
-        case Thing::AsmDef:
             return QPixmap(":/images/label.png");
         case Thing::MethBlock:
             return QPixmap(":/images/category.png");

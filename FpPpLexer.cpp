@@ -117,7 +117,7 @@ bool PpLexer::addMacro(const QByteArray& name, const QByteArray& macro)
     return true;
 }
 
-struct { Cd::TokenType abbr, token; } s_cdmap[] = {
+struct Cdmap { Cd::TokenType abbr, token; } s_cdmap[] = {
     { Cd::Tok_B, Cd::Tok_BOOLEVAL },
     { Cd::Tok_F, Cd::Tok_Invalid },
     { Cd::Tok_H, Cd::Tok_LONGSTRINGS },
@@ -286,13 +286,13 @@ bool PpLexer::handleInclude(const QByteArray& data, const Token& t)
 {
     QString path = QString::fromUtf8(data).trimmed().toLower();
     const FileSystem::File* found = 0;
-#ifdef _FP_HAVE_FILESYSTEM_
+#ifdef _FP_HAVE_FILESYSTEM_disabled
+    // TODO this finds the wrong include file for x86/cpubase.pas and produces a parser error there
     if( d_fs )
     {
         const FileSystem::File* f = d_fs->findFile(t.d_sourcePath);
         Q_ASSERT( f );
         QStringList pathFile = path.split('/');
-        const FileSystem::File* found = 0;
         if( pathFile.size() == 1 )
         {
             QString name = pathFile[0];

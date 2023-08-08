@@ -38,7 +38,7 @@ public:
 
     Token nextToken();
     Token peekToken(quint8 lookAhead = 1);
-    QList<Token> tokens( const QString& code );
+    TokenList tokens( const QString& code );
     quint32 getSloc() const { return d_sloc; }
     const QString& getFilePath() const { return d_filePath; }
 protected:

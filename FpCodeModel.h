@@ -37,9 +37,9 @@ class Thing
 {
 public:
     enum Kind { Undefined,
-       /* Declaration: */ Const, TypeDecl, Var, Func, Proc, AsmDef, MethBlock, Label, Param, Field,
-                            Module, Self,
-       /* Scope: */ Interface, Implementation, Body, Members,
+       /* Declaration: */ Const, TypeDecl, Var, Func, Proc, MethBlock, Label, Param, Field,
+                            Module, Self, Namespace, Property,
+       /* Scope: */ Interface, Implementation, Body, Members, Finalizer,
        /* UnitFile: */ Unit,
        /* IncludeFile: */ Include,
        /* CodeFolder: */ Folder
@@ -60,7 +60,7 @@ class Type : public QSharedData
 {
 public:
     typedef QExplicitlySharedDataPointer<Type> Ref;
-    enum Kind { Undefined, Pointer, Array, Record, Class
+    enum Kind { Undefined, Pointer, Array, Record, Class, Procedural
               };
     Type::Ref d_type;
     Scope* d_members; // owns
@@ -100,7 +100,7 @@ class Scope : public Thing
 {
 public:
     QList<Declaration*> d_order; // owns
-    Thing* d_owner; // either declaration or unit file or asm file or 0
+    Thing* d_owner; // either declaration or unit file or 0
     Scope* d_outer;
     Scope* d_altOuter; // to access params defined in interface declaration of func/proc
 

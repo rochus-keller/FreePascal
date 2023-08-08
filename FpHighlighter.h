@@ -30,11 +30,16 @@ namespace Fp
     class PascalPainter : public QSyntaxHighlighter
     {
     public:
+        static const char* s_builtInTypes[];
+        static const char* s_builtInConsts[];
+        static const char* s_builtInProcs[];
+
         enum { TokenProp = QTextFormat::UserProperty };
         explicit PascalPainter(QObject *parent = 0);
         void addBuiltIn(const QByteArray& bi);
         void addKeyword(const QByteArray& kw);
-
+        void addBuiltIns();
+        bool containsBuiltIn(const QByteArray& str) const { return d_builtins.contains(str.toUpper()); }
     protected:
         QTextCharFormat formatForCategory(int) const;
 
